@@ -136,22 +136,12 @@
 @layer components {
   /**
    * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
    */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +152,107 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1400px;
     }
+  }
+
+  /* Excel-like table styling */
+  .excel-table {
+    @apply w-full border-collapse;
+  }
+
+  .excel-table th,
+  .excel-table td {
+    @apply border border-border px-3 py-2 text-sm;
+  }
+
+  .excel-table th {
+    @apply bg-muted font-semibold text-left;
+  }
+
+  .excel-table tr:hover {
+    @apply bg-muted/50;
+  }
+
+  .excel-cell {
+    @apply border border-border px-2 py-1.5 text-sm;
+  }
+
+  .excel-cell:focus-within {
+    @apply ring-2 ring-primary ring-inset;
+  }
+
+  .excel-cell-input {
+    @apply w-full bg-transparent border-none outline-none;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .status-complete {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .status-in-progress {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .status-not-started {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+  .status-overdue {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .status-on-hold {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  /* Priority badges */
+  .priority-high {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .priority-medium {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .priority-low {
+    @apply bg-green-100 text-green-800;
+  }
+
+  /* Risk badges */
+  .risk-high {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .risk-medium {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .risk-low {
+    @apply bg-green-100 text-green-800;
+  }
+
+  /* Dashboard card */
+  .dashboard-card {
+    @apply bg-card rounded-lg border border-border p-4 shadow-sm;
+  }
+
+  /* Chart container */
+  .chart-container {
+    @apply bg-card rounded-lg border border-border p-4;
   }
 }
