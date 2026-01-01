@@ -73,7 +73,8 @@ export function DepartmentManager({ selectedDepartmentId, onSelectDepartment }: 
   const deleteDepartment = trpc.departments.delete.useMutation({
     onSuccess: () => {
       utils.departments.list.invalidate();
-      utils.entries.list.invalidate();
+      utils.monthlyData.get.invalidate();
+      utils.patientCases.listByDepartment.invalidate();
       if (selectedDepartmentId === editingDepartment?.id) {
         onSelectDepartment(null);
       }

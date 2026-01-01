@@ -1,7 +1,23 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -9,574 +25,521 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, Trash2, Save, FileSpreadsheet } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-
-type Status = "not_started" | "in_progress" | "complete" | "overdue" | "on_hold";
-type Priority = "low" | "medium" | "high";
-type Risk = "low" | "medium" | "high";
-
-interface KpiEntry {
-  id: number;
-  name: string;
-  assignedTo: string | null;
-  startDate: Date | null;
-  endDate: Date | null;
-  targetValue: string | null;
-  actualValue: string | null;
-  unit: string | null;
-  status: Status;
-  risk: Risk;
-  priority: Priority;
-  comments: string | null;
-  departmentId: number;
-}
 
 interface KpiSpreadsheetProps {
   departmentId: number;
   departmentName: string;
 }
 
-const STATUS_OPTIONS: { value: Status; label: string }[] = [
-  { value: "not_started", label: "Not Started" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "complete", label: "Complete" },
-  { value: "overdue", label: "Overdue" },
-  { value: "on_hold", label: "On Hold" },
-];
-
-const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
-
-const RISK_OPTIONS: { value: Risk; label: string }[] = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
-
-function StatusBadge({ status }: { status: Status }) {
-  const statusClasses: Record<Status, string> = {
-    not_started: "status-badge status-not-started",
-    in_progress: "status-badge status-in-progress",
-    complete: "status-badge status-complete",
-    overdue: "status-badge status-overdue",
-    on_hold: "status-badge status-on-hold",
-  };
-  const statusLabels: Record<Status, string> = {
-    not_started: "Not Started",
-    in_progress: "In Progress",
-    complete: "Complete",
-    overdue: "Overdue",
-    on_hold: "On Hold",
-  };
-  return <span className={statusClasses[status]}>{statusLabels[status]}</span>;
+interface Category {
+  id: number;
+  name: string;
+  requiresPatientInfo: number | null;
 }
 
-function PriorityBadge({ priority }: { priority: Priority }) {
-  const classes: Record<Priority, string> = {
-    high: "status-badge priority-high",
-    medium: "status-badge priority-medium",
-    low: "status-badge priority-low",
-  };
-  return <span className={classes[priority]}>{priority.charAt(0).toUpperCase() + priority.slice(1)}</span>;
+interface Indicator {
+  id: number;
+  categoryId: number;
+  name: string;
+  unit: string | null;
+  requiresPatientInfo: number | null;
 }
 
-function RiskBadge({ risk }: { risk: Risk }) {
-  const classes: Record<Risk, string> = {
-    high: "status-badge risk-high",
-    medium: "status-badge risk-medium",
-    low: "status-badge risk-low",
-  };
-  return <span className={classes[risk]}>{risk.charAt(0).toUpperCase() + risk.slice(1)}</span>;
+interface PatientCase {
+  id: number;
+  hospitalId: string;
+  patientName: string;
+  caseDate: Date | null;
+  notes: string | null;
+  month: number;
 }
+
+const MONTHS = [
+  { value: 1, label: "January", short: "Jan" },
+  { value: 2, label: "February", short: "Feb" },
+  { value: 3, label: "March", short: "Mar" },
+  { value: 4, label: "April", short: "Apr" },
+  { value: 5, label: "May", short: "May" },
+  { value: 6, label: "June", short: "Jun" },
+  { value: 7, label: "July", short: "Jul" },
+  { value: 8, label: "August", short: "Aug" },
+  { value: 9, label: "September", short: "Sep" },
+  { value: 10, label: "October", short: "Oct" },
+  { value: 11, label: "November", short: "Nov" },
+  { value: 12, label: "December", short: "Dec" },
+];
+
+const QUARTERS = [
+  { value: 1, label: "Q1 (Jan-Mar)", months: [1, 2, 3] },
+  { value: 2, label: "Q2 (Apr-Jun)", months: [4, 5, 6] },
+  { value: 3, label: "Q3 (Jul-Sep)", months: [7, 8, 9] },
+  { value: 4, label: "Q4 (Oct-Dec)", months: [10, 11, 12] },
+];
 
 export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetProps) {
   const utils = trpc.useUtils();
-  const { data: entries = [], isLoading } = trpc.entries.list.useQuery({ departmentId });
-  const { data: templates = [] } = trpc.templates.list.useQuery();
+  const currentYear = new Date().getFullYear();
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
   
-  const createEntry = trpc.entries.create.useMutation({
-    onSuccess: () => {
-      utils.entries.list.invalidate();
-      utils.analytics.stats.invalidate();
-      toast.success("KPI entry added");
-    },
-  });
+  const [year, setYear] = useState(currentYear);
+  const [quarter, setQuarter] = useState(currentQuarter);
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  const [editingCell, setEditingCell] = useState<{ indicatorId: number; month: number } | null>(null);
+  const [cellValue, setCellValue] = useState("");
   
-  const updateEntry = trpc.entries.update.useMutation({
-    onSuccess: () => {
-      utils.entries.list.invalidate();
-      utils.analytics.stats.invalidate();
-    },
-  });
+  // Patient case dialog
+  const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+  const [selectedIndicator, setSelectedIndicator] = useState<Indicator | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [patientForm, setPatientForm] = useState({ hospitalId: "", patientName: "", notes: "" });
   
-  const deleteEntry = trpc.entries.delete.useMutation({
-    onSuccess: () => {
-      utils.entries.list.invalidate();
-      utils.analytics.stats.invalidate();
-      toast.success("KPI entry deleted");
-    },
+  // View cases dialog
+  const [viewCasesOpen, setViewCasesOpen] = useState(false);
+  const [viewingIndicator, setViewingIndicator] = useState<Indicator | null>(null);
+  const [viewingMonth, setViewingMonth] = useState<number | null>(null);
+
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: indicators = [] } = trpc.indicators.list.useQuery();
+  const { data: monthlyData = [] } = trpc.monthlyData.get.useQuery({
+    departmentId,
+    year,
+    quarter,
+  });
+  const { data: patientCases = [] } = trpc.patientCases.listByDepartment.useQuery({
+    departmentId,
+    year,
+    quarter,
   });
 
-  const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
-  const [editValue, setEditValue] = useState<string>("");
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editingCell && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editingCell]);
-
-  const handleCellClick = (id: number, field: string, currentValue: string | null) => {
-    setEditingCell({ id, field });
-    setEditValue(currentValue || "");
-  };
-
-  const handleCellBlur = () => {
-    if (editingCell) {
-      const { id, field } = editingCell;
-      const entry = entries.find((e: KpiEntry) => e.id === id);
-      if (entry) {
-        const currentValue = entry[field as keyof KpiEntry];
-        const currentStr = currentValue instanceof Date 
-          ? currentValue.toISOString().split('T')[0] 
-          : (currentValue?.toString() || "");
-        
-        if (editValue !== currentStr) {
-          let updateData: Record<string, unknown> = {};
-          
-          if (field === "startDate" || field === "endDate") {
-            updateData[field] = editValue ? new Date(editValue) : null;
-          } else if (field === "targetValue" || field === "actualValue") {
-            updateData[field] = editValue || null;
-          } else {
-            updateData[field] = editValue;
-          }
-          
-          updateEntry.mutate({ id, ...updateData });
-        }
-      }
-    }
-    setEditingCell(null);
-    setEditValue("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleCellBlur();
-    } else if (e.key === "Escape") {
+  const upsertMonthlyData = trpc.monthlyData.upsert.useMutation({
+    onSuccess: () => {
+      utils.monthlyData.get.invalidate();
       setEditingCell(null);
-      setEditValue("");
-    }
-  };
+      setCellValue("");
+    },
+  });
 
-  const handleSelectChange = (id: number, field: string, value: string) => {
-    updateEntry.mutate({ id, [field]: value });
-  };
+  const createPatientCase = trpc.patientCases.create.useMutation({
+    onSuccess: () => {
+      utils.patientCases.listByDepartment.invalidate();
+      setPatientDialogOpen(false);
+      setPatientForm({ hospitalId: "", patientName: "", notes: "" });
+      toast.success("Patient case added");
+    },
+  });
 
-  const handleAddFromTemplate = (template: { name: string; description: string | null; unit: string | null; targetValue: string | null }) => {
-    createEntry.mutate({
-      departmentId,
-      name: template.name,
-      description: template.description || undefined,
-      unit: template.unit || undefined,
-      targetValue: template.targetValue || undefined,
-      status: "not_started",
-      risk: "low",
-      priority: "medium",
+  const deletePatientCase = trpc.patientCases.delete.useMutation({
+    onSuccess: () => {
+      utils.patientCases.listByDepartment.invalidate();
+      toast.success("Patient case deleted");
+    },
+  });
+
+  const quarterMonths = QUARTERS.find(q => q.value === quarter)?.months || [];
+
+  // Group indicators by category
+  const indicatorsByCategory = useMemo(() => {
+    const grouped: Record<number, Indicator[]> = {};
+    indicators.forEach((ind: Indicator) => {
+      if (!grouped[ind.categoryId]) {
+        grouped[ind.categoryId] = [];
+      }
+      grouped[ind.categoryId].push(ind);
     });
-    setShowTemplateDialog(false);
-  };
+    return grouped;
+  }, [indicators]);
 
-  const handleAddBlankRow = () => {
-    createEntry.mutate({
-      departmentId,
-      name: "New KPI",
-      status: "not_started",
-      risk: "low",
-      priority: "medium",
-    });
-  };
-
-  const handleDeleteRow = (id: number) => {
-    if (confirm("Are you sure you want to delete this KPI entry?")) {
-      deleteEntry.mutate({ id });
+  // Get value for a specific cell
+  const getCellValue = (indicatorId: number, month: number): string => {
+    const indicator = indicators.find((i: Indicator) => i.id === indicatorId);
+    
+    // For indicators that require patient info, count patient cases
+    if (indicator?.requiresPatientInfo) {
+      const count = patientCases.filter(
+        (c: PatientCase & { indicatorId: number }) => c.indicatorId === indicatorId && c.month === month
+      ).length;
+      return count.toString();
     }
-  };
-
-  const formatDate = (date: Date | null) => {
-    if (!date) return "";
-    return new Date(date).toISOString().split('T')[0];
-  };
-
-  const calculateDuration = (start: Date | null, end: Date | null) => {
-    if (!start || !end) return "";
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays.toString();
-  };
-
-  const calculateVariance = (target: string | null, actual: string | null) => {
-    if (!target || !actual) return "";
-    const t = parseFloat(target);
-    const a = parseFloat(actual);
-    if (isNaN(t) || isNaN(a) || t === 0) return "";
-    const variance = ((a - t) / t) * 100;
-    return variance.toFixed(1) + "%";
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-4">
-        <div className="animate-pulse space-y-2">
-          <div className="h-8 bg-muted rounded w-full"></div>
-          <div className="h-8 bg-muted rounded w-full"></div>
-          <div className="h-8 bg-muted rounded w-full"></div>
-        </div>
-      </div>
+    
+    // For other indicators, get from monthly data
+    const data = monthlyData.find(
+      (d: { indicatorId: number; month: number; value: string | null }) => 
+        d.indicatorId === indicatorId && d.month === month
     );
-  }
+    return data?.value?.toString() || "0";
+  };
+
+  // Get quarterly total for an indicator
+  const getQuarterlyTotal = (indicatorId: number): number => {
+    return quarterMonths.reduce((sum, month) => {
+      return sum + parseFloat(getCellValue(indicatorId, month) || "0");
+    }, 0);
+  };
+
+  // Handle cell click
+  const handleCellClick = (indicator: Indicator, month: number) => {
+    if (indicator.requiresPatientInfo) {
+      // Open patient case dialog
+      setSelectedIndicator(indicator);
+      setSelectedMonth(month);
+      setPatientDialogOpen(true);
+    } else {
+      // Edit cell directly
+      setEditingCell({ indicatorId: indicator.id, month });
+      setCellValue(getCellValue(indicator.id, month));
+    }
+  };
+
+  // Handle cell value save
+  const handleCellSave = () => {
+    if (!editingCell) return;
+    upsertMonthlyData.mutate({
+      departmentId,
+      indicatorId: editingCell.indicatorId,
+      year,
+      month: editingCell.month,
+      value: cellValue || "0",
+    });
+  };
+
+  // Handle add patient case
+  const handleAddPatientCase = () => {
+    if (!selectedIndicator || !selectedMonth) return;
+    if (!patientForm.hospitalId.trim() || !patientForm.patientName.trim()) {
+      toast.error("Hospital ID and Patient Name are required");
+      return;
+    }
+    createPatientCase.mutate({
+      departmentId,
+      indicatorId: selectedIndicator.id,
+      year,
+      month: selectedMonth,
+      hospitalId: patientForm.hospitalId,
+      patientName: patientForm.patientName,
+      notes: patientForm.notes || undefined,
+    });
+  };
+
+  // View patient cases for a cell
+  const handleViewCases = (indicator: Indicator, month: number) => {
+    setViewingIndicator(indicator);
+    setViewingMonth(month);
+    setViewCasesOpen(true);
+  };
+
+  // Get patient cases for viewing
+  const viewingCases = useMemo(() => {
+    if (!viewingIndicator || !viewingMonth) return [];
+    return patientCases.filter(
+      (c: PatientCase & { indicatorId: number }) => 
+        c.indicatorId === viewingIndicator.id && c.month === viewingMonth
+    );
+  }, [patientCases, viewingIndicator, viewingMonth]);
+
+  const toggleCategory = (categoryId: number) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  // Initialize all categories as expanded
+  useMemo(() => {
+    if (categories.length > 0 && expandedCategories.size === 0) {
+      setExpandedCategories(new Set(categories.map((c: Category) => c.id)));
+    }
+  }, [categories]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          {departmentName} - KPI Table
-        </h3>
-        <div className="flex gap-2">
-          <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add from Template
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add KPI from Template</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-2 mt-4">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => handleAddFromTemplate(template)}
-                    className="text-left p-3 border rounded-lg hover:bg-muted transition-colors"
-                  >
-                    <div className="font-medium">{template.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {template.category} • Target: {template.targetValue} {template.unit}
-                    </div>
-                    {template.description && (
-                      <div className="text-sm text-muted-foreground mt-1">{template.description}</div>
-                    )}
-                  </button>
+    <Card>
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <CardTitle className="text-lg">{departmentName} - KPI Data Entry</CardTitle>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Year:</Label>
+              <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                    <SelectItem key={y} value={y.toString()}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Quarter:</Label>
+              <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {QUARTERS.map((q) => (
+                    <SelectItem key={q.value} value={q.value.toString()}>
+                      {q.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-[250px] font-semibold">KPI Indicator</TableHead>
+                {quarterMonths.map((month) => (
+                  <TableHead key={month} className="text-center font-semibold w-[100px]">
+                    {MONTHS.find((m) => m.value === month)?.short}
+                  </TableHead>
                 ))}
+                <TableHead className="text-center font-semibold w-[100px] bg-primary/10">
+                  Q{quarter} Total
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((category: Category) => (
+                <>
+                  {/* Category Header Row */}
+                  <TableRow
+                    key={`cat-${category.id}`}
+                    className="bg-muted/30 cursor-pointer hover:bg-muted/50"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <TableCell colSpan={5} className="font-semibold">
+                      <div className="flex items-center gap-2">
+                        {expandedCategories.has(category.id) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                        {category.name}
+                        {category.requiresPatientInfo ? (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            (Patient tracking required)
+                          </span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {/* Indicator Rows */}
+                  {expandedCategories.has(category.id) &&
+                    indicatorsByCategory[category.id]?.map((indicator: Indicator) => (
+                      <TableRow key={`ind-${indicator.id}`} className="hover:bg-muted/20">
+                        <TableCell className="pl-8">
+                          <div className="flex items-center gap-2">
+                            <span>{indicator.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({indicator.unit || "cases"})
+                            </span>
+                          </div>
+                        </TableCell>
+                        {quarterMonths.map((month) => {
+                          const isEditing =
+                            editingCell?.indicatorId === indicator.id &&
+                            editingCell?.month === month;
+                          const value = getCellValue(indicator.id, month);
+                          const requiresPatient = indicator.requiresPatientInfo;
+
+                          return (
+                            <TableCell
+                              key={month}
+                              className="text-center p-1"
+                            >
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleCellSave();
+                                    if (e.key === "Escape") setEditingCell(null);
+                                  }}
+                                  className="h-8 text-center"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => handleCellClick(indicator, month)}
+                                    className="w-full h-8 flex items-center justify-center hover:bg-muted rounded transition-colors"
+                                  >
+                                    {value}
+                                    {requiresPatient && (
+                                      <Plus className="h-3 w-3 ml-1 text-muted-foreground" />
+                                    )}
+                                  </button>
+                                  {requiresPatient && parseInt(value) > 0 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewCases(indicator, month);
+                                      }}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-center font-semibold bg-primary/5">
+                          {getQuarterlyTotal(indicator.id)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Add Patient Case Dialog */}
+        <Dialog open={patientDialogOpen} onOpenChange={setPatientDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Add Patient Case - {selectedIndicator?.name}
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({MONTHS.find((m) => m.value === selectedMonth)?.label} {year})
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="hospitalId">Hospital ID *</Label>
+                <Input
+                  id="hospitalId"
+                  value={patientForm.hospitalId}
+                  onChange={(e) =>
+                    setPatientForm({ ...patientForm, hospitalId: e.target.value })
+                  }
+                  placeholder="Enter patient hospital ID"
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-          <Button variant="default" size="sm" onClick={handleAddBlankRow}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Row
-          </Button>
-        </div>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="patientName">Patient Name *</Label>
+                <Input
+                  id="patientName"
+                  value={patientForm.patientName}
+                  onChange={(e) =>
+                    setPatientForm({ ...patientForm, patientName: e.target.value })
+                  }
+                  placeholder="Enter patient name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Input
+                  id="notes"
+                  value={patientForm.notes}
+                  onChange={(e) =>
+                    setPatientForm({ ...patientForm, notes: e.target.value })
+                  }
+                  placeholder="Optional notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPatientDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddPatientCase} disabled={createPatientCase.isPending}>
+                {createPatientCase.isPending ? "Adding..." : "Add Case"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="excel-table">
-          <thead>
-            <tr>
-              <th className="w-[200px]">KPI Name</th>
-              <th className="w-[120px]">Assigned To</th>
-              <th className="w-[110px]">Start Date</th>
-              <th className="w-[110px]">End Date</th>
-              <th className="w-[80px]">Duration</th>
-              <th className="w-[90px]">Target</th>
-              <th className="w-[90px]">Actual</th>
-              <th className="w-[80px]">Variance</th>
-              <th className="w-[60px]">Unit</th>
-              <th className="w-[110px]">Status</th>
-              <th className="w-[90px]">Risk</th>
-              <th className="w-[90px]">Priority</th>
-              <th className="w-[150px]">Comments</th>
-              <th className="w-[50px]"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.length === 0 ? (
-              <tr>
-                <td colSpan={14} className="text-center py-8 text-muted-foreground">
-                  No KPI entries yet. Click "Add Row" or "Add from Template" to get started.
-                </td>
-              </tr>
-            ) : (
-              entries.map((entry: KpiEntry) => (
-                <tr key={entry.id}>
-                  {/* Name */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "name", entry.name)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "name" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      <span className="font-medium">{entry.name}</span>
-                    )}
-                  </td>
-
-                  {/* Assigned To */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "assignedTo", entry.assignedTo)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "assignedTo" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      entry.assignedTo || "-"
-                    )}
-                  </td>
-
-                  {/* Start Date */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "startDate", formatDate(entry.startDate))}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "startDate" ? (
-                      <input
-                        ref={inputRef}
-                        type="date"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      formatDate(entry.startDate) || "-"
-                    )}
-                  </td>
-
-                  {/* End Date */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "endDate", formatDate(entry.endDate))}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "endDate" ? (
-                      <input
-                        ref={inputRef}
-                        type="date"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      formatDate(entry.endDate) || "-"
-                    )}
-                  </td>
-
-                  {/* Duration (calculated) */}
-                  <td className="excel-cell bg-muted/30 text-center">
-                    {calculateDuration(entry.startDate, entry.endDate) || "-"}
-                  </td>
-
-                  {/* Target Value */}
-                  <td
-                    className="excel-cell cursor-pointer text-right"
-                    onClick={() => handleCellClick(entry.id, "targetValue", entry.targetValue)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "targetValue" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input text-right"
-                      />
-                    ) : (
-                      entry.targetValue || "-"
-                    )}
-                  </td>
-
-                  {/* Actual Value */}
-                  <td
-                    className="excel-cell cursor-pointer text-right"
-                    onClick={() => handleCellClick(entry.id, "actualValue", entry.actualValue)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "actualValue" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input text-right"
-                      />
-                    ) : (
-                      entry.actualValue || "-"
-                    )}
-                  </td>
-
-                  {/* Variance (calculated) */}
-                  <td className="excel-cell bg-muted/30 text-right">
-                    {calculateVariance(entry.targetValue, entry.actualValue) || "-"}
-                  </td>
-
-                  {/* Unit */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "unit", entry.unit)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "unit" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      entry.unit || "-"
-                    )}
-                  </td>
-
-                  {/* Status */}
-                  <td className="excel-cell p-1">
-                    <Select
-                      value={entry.status}
-                      onValueChange={(value) => handleSelectChange(entry.id, "status", value)}
-                    >
-                      <SelectTrigger className="h-7 border-0 shadow-none">
-                        <StatusBadge status={entry.status} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            <StatusBadge status={opt.value} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-
-                  {/* Risk */}
-                  <td className="excel-cell p-1">
-                    <Select
-                      value={entry.risk}
-                      onValueChange={(value) => handleSelectChange(entry.id, "risk", value)}
-                    >
-                      <SelectTrigger className="h-7 border-0 shadow-none">
-                        <RiskBadge risk={entry.risk} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RISK_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            <RiskBadge risk={opt.value} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-
-                  {/* Priority */}
-                  <td className="excel-cell p-1">
-                    <Select
-                      value={entry.priority}
-                      onValueChange={(value) => handleSelectChange(entry.id, "priority", value)}
-                    >
-                      <SelectTrigger className="h-7 border-0 shadow-none">
-                        <PriorityBadge priority={entry.priority} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRIORITY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            <PriorityBadge priority={opt.value} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-
-                  {/* Comments */}
-                  <td
-                    className="excel-cell cursor-pointer"
-                    onClick={() => handleCellClick(entry.id, "comments", entry.comments)}
-                  >
-                    {editingCell?.id === entry.id && editingCell?.field === "comments" ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={handleCellBlur}
-                        onKeyDown={handleKeyDown}
-                        className="excel-cell-input"
-                      />
-                    ) : (
-                      <span className="truncate block max-w-[140px]">{entry.comments || "-"}</span>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="excel-cell p-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteRow(entry.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {entries.length > 0 && (
-        <div className="text-sm text-muted-foreground">
-          {entries.length} KPI entries • Click any cell to edit
-        </div>
-      )}
-    </div>
+        {/* View Patient Cases Dialog */}
+        <Dialog open={viewCasesOpen} onOpenChange={setViewCasesOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                Patient Cases - {viewingIndicator?.name}
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({MONTHS.find((m) => m.value === viewingMonth)?.label} {year})
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              {viewingCases.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No patient cases recorded for this period.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Hospital ID</TableHead>
+                      <TableHead>Patient Name</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {viewingCases.map((c: PatientCase) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-mono">{c.hospitalId}</TableCell>
+                        <TableCell>{c.patientName}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {c.notes || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => deletePatientCase.mutate({ id: c.id })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setViewCasesOpen(false);
+                  if (viewingIndicator && viewingMonth) {
+                    setSelectedIndicator(viewingIndicator);
+                    setSelectedMonth(viewingMonth);
+                    setPatientDialogOpen(true);
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Case
+              </Button>
+              <Button onClick={() => setViewCasesOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }

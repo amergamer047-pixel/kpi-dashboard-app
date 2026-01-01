@@ -5,6 +5,7 @@ import { DashboardSummary } from "@/components/DashboardSummary";
 import { KpiSpreadsheet } from "@/components/KpiSpreadsheet";
 import { KpiCharts } from "@/components/KpiCharts";
 import { DepartmentManager } from "@/components/DepartmentManager";
+import { ExcelExport } from "@/components/ExcelExport";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,7 +24,7 @@ import {
   LogOut,
   Menu,
   X,
-  Download,
+  Settings,
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
@@ -35,17 +36,62 @@ interface Department {
   color: string | null;
 }
 
+interface Indicator {
+  id: number;
+  name: string;
+  categoryId: number;
+  requiresPatientInfo: number | null;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface MonthlyData {
+  indicatorId: number;
+  month: number;
+  value: string | null;
+}
+
+interface PatientCase {
+  id: number;
+  indicatorId: number;
+  hospitalId: string;
+  patientName: string;
+  month: number;
+  notes: string | null;
+}
+
 export default function Dashboard() {
   const { loading, user, logout } = useAuth();
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  const currentYear = new Date().getFullYear();
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+  
   const { data: departments = [] } = trpc.departments.list.useQuery(undefined, {
     enabled: !!user,
   });
-  const { data: allEntries = [] } = trpc.entries.list.useQuery(undefined, {
+  const { data: categories = [] } = trpc.categories.list.useQuery(undefined, {
     enabled: !!user,
   });
+  const { data: indicators = [] } = trpc.indicators.list.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  // Get data for export
+  const firstDeptId = departments[0]?.id;
+  const { data: monthlyData = [] } = trpc.monthlyData.get.useQuery(
+    { departmentId: firstDeptId!, year: currentYear, quarter: currentQuarter },
+    { enabled: !!user && !!firstDeptId }
+  );
+  const { data: patientCases = [] } = trpc.patientCases.listByDepartment.useQuery(
+    { departmentId: firstDeptId!, year: currentYear, quarter: currentQuarter },
+    { enabled: !!user && !!firstDeptId }
+  );
 
   const selectedDepartment = departments.find((d: Department) => d.id === selectedDepartmentId);
 
@@ -87,40 +133,8 @@ export default function Dashboard() {
     { icon: LayoutDashboard, label: "Overview", value: "overview" },
     { icon: Table2, label: "KPI Data", value: "data" },
     { icon: BarChart3, label: "Charts", value: "charts" },
+    { icon: Settings, label: "Settings", value: "settings" },
   ];
-
-  const handleExport = () => {
-    // Create CSV content
-    const headers = ["KPI Name", "Department", "Assigned To", "Start Date", "End Date", "Target", "Actual", "Unit", "Status", "Risk", "Priority", "Comments"];
-    const rows = allEntries.map((entry: any) => {
-      const dept = departments.find((d: Department) => d.id === entry.departmentId);
-      return [
-        entry.name,
-        dept?.name || "",
-        entry.assignedTo || "",
-        entry.startDate ? new Date(entry.startDate).toISOString().split('T')[0] : "",
-        entry.endDate ? new Date(entry.endDate).toISOString().split('T')[0] : "",
-        entry.targetValue || "",
-        entry.actualValue || "",
-        entry.unit || "",
-        entry.status,
-        entry.risk,
-        entry.priority,
-        entry.comments || "",
-      ];
-    });
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row: string[]) => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `kpi-dashboard-export-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -224,16 +238,24 @@ export default function Dashboard() {
                 {activeTab === "overview" && "Dashboard Overview"}
                 {activeTab === "data" && "KPI Data Entry"}
                 {activeTab === "charts" && "KPI Analytics"}
+                {activeTab === "settings" && "Settings"}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {selectedDepartment ? selectedDepartment.name : "All Departments"}
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          {firstDeptId && (
+            <ExcelExport
+              departmentName={selectedDepartment?.name || "All Departments"}
+              year={currentYear}
+              quarter={currentQuarter}
+              categories={categories}
+              indicators={indicators}
+              monthlyData={monthlyData}
+              patientCases={patientCases}
+            />
+          )}
         </header>
 
         {/* Content */}
@@ -282,8 +304,227 @@ export default function Dashboard() {
           {activeTab === "charts" && (
             <KpiCharts departmentId={selectedDepartmentId || undefined} />
           )}
+
+          {activeTab === "settings" && (
+            <KpiSettingsPage />
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Settings Page Component
+function KpiSettingsPage() {
+  const utils = trpc.useUtils();
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: indicators = [] } = trpc.indicators.list.useQuery();
+  
+  const [newCategory, setNewCategory] = useState({ name: "", requiresPatientInfo: false });
+  const [newIndicator, setNewIndicator] = useState({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
+  
+  const createCategory = trpc.categories.create.useMutation({
+    onSuccess: () => {
+      utils.categories.list.invalidate();
+      setNewCategory({ name: "", requiresPatientInfo: false });
+    },
+  });
+  
+  const createIndicator = trpc.indicators.create.useMutation({
+    onSuccess: () => {
+      utils.indicators.list.invalidate();
+      setNewIndicator({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
+    },
+  });
+  
+  const deleteCategory = trpc.categories.delete.useMutation({
+    onSuccess: () => {
+      utils.categories.list.invalidate();
+      utils.indicators.list.invalidate();
+    },
+  });
+  
+  const deleteIndicator = trpc.indicators.delete.useMutation({
+    onSuccess: () => {
+      utils.indicators.list.invalidate();
+    },
+  });
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      {/* Categories Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold mb-4">KPI Categories</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Categories group related KPI indicators together (e.g., Mandatory, Respiratory, Renal).
+          </p>
+          
+          {/* Add Category Form */}
+          <div className="flex gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Category name"
+              value={newCategory.name}
+              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              className="flex-1 px-3 py-2 border rounded-lg"
+            />
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={newCategory.requiresPatientInfo}
+                onChange={(e) => setNewCategory({ ...newCategory, requiresPatientInfo: e.target.checked })}
+              />
+              <span className="text-sm">Requires Patient Info</span>
+            </label>
+            <Button
+              onClick={() => {
+                if (newCategory.name.trim()) {
+                  createCategory.mutate({
+                    name: newCategory.name,
+                    requiresPatientInfo: newCategory.requiresPatientInfo,
+                  });
+                }
+              }}
+              disabled={createCategory.isPending}
+            >
+              Add Category
+            </Button>
+          </div>
+          
+          {/* Categories List */}
+          <div className="space-y-2">
+            {categories.map((cat: { id: number; name: string; requiresPatientInfo: number | null }) => (
+              <div key={cat.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <span className="font-medium">{cat.name}</span>
+                  {cat.requiresPatientInfo ? (
+                    <span className="ml-2 text-xs text-muted-foreground">(Patient tracking)</span>
+                  ) : null}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => {
+                    if (confirm(`Delete category "${cat.name}"? This will also delete all indicators in this category.`)) {
+                      deleteCategory.mutate({ id: cat.id });
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            ))}
+            {categories.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">No categories yet.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Indicators Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold mb-4">KPI Indicators</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Indicators are the specific KPIs you track (e.g., Fall Incidents, NIV Cases, RDU Sessions).
+          </p>
+          
+          {/* Add Indicator Form */}
+          <div className="flex gap-4 mb-4 flex-wrap">
+            <input
+              type="text"
+              placeholder="Indicator name"
+              value={newIndicator.name}
+              onChange={(e) => setNewIndicator({ ...newIndicator, name: e.target.value })}
+              className="flex-1 min-w-[200px] px-3 py-2 border rounded-lg"
+            />
+            <select
+              value={newIndicator.categoryId}
+              onChange={(e) => setNewIndicator({ ...newIndicator, categoryId: parseInt(e.target.value) })}
+              className="px-3 py-2 border rounded-lg"
+            >
+              <option value={0}>Select Category</option>
+              {categories.map((cat: { id: number; name: string }) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Unit (e.g., cases)"
+              value={newIndicator.unit}
+              onChange={(e) => setNewIndicator({ ...newIndicator, unit: e.target.value })}
+              className="w-32 px-3 py-2 border rounded-lg"
+            />
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={newIndicator.requiresPatientInfo}
+                onChange={(e) => setNewIndicator({ ...newIndicator, requiresPatientInfo: e.target.checked })}
+              />
+              <span className="text-sm">Patient Info</span>
+            </label>
+            <Button
+              onClick={() => {
+                if (newIndicator.name.trim() && newIndicator.categoryId > 0) {
+                  createIndicator.mutate({
+                    name: newIndicator.name,
+                    categoryId: newIndicator.categoryId,
+                    unit: newIndicator.unit || "cases",
+                    requiresPatientInfo: newIndicator.requiresPatientInfo,
+                  });
+                }
+              }}
+              disabled={createIndicator.isPending}
+            >
+              Add Indicator
+            </Button>
+          </div>
+          
+          {/* Indicators List by Category */}
+          <div className="space-y-4">
+            {categories.map((cat: { id: number; name: string }) => {
+              const catIndicators = indicators.filter((ind: { categoryId: number }) => ind.categoryId === cat.id);
+              if (catIndicators.length === 0) return null;
+              
+              return (
+                <div key={cat.id}>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-2">{cat.name}</h4>
+                  <div className="space-y-2">
+                    {catIndicators.map((ind: { id: number; name: string; unit: string | null; requiresPatientInfo: number | null }) => (
+                      <div key={ind.id} className="flex items-center justify-between p-3 border rounded-lg ml-4">
+                        <div>
+                          <span className="font-medium">{ind.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">({ind.unit || "cases"})</span>
+                          {ind.requiresPatientInfo ? (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Patient tracking</span>
+                          ) : null}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => {
+                            if (confirm(`Delete indicator "${ind.name}"?`)) {
+                              deleteIndicator.mutate({ id: ind.id });
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {indicators.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">No indicators yet. Add categories first, then add indicators.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

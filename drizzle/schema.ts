@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -19,7 +19,7 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Departments table - organize KPIs by department
+ * Departments table - organize KPIs by department (e.g., Male Ward, Female Ward, ICU)
  */
 export const departments = mysqlTable("departments", {
   id: int("id").autoincrement().primaryKey(),
@@ -35,69 +35,101 @@ export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = typeof departments.$inferInsert;
 
 /**
- * KPI Templates - predefined KPI types that can be used across departments
+ * KPI Categories - group KPIs by type (e.g., Mandatory, Respiratory, Renal)
  */
-export const kpiTemplates = mysqlTable("kpi_templates", {
+export const kpiCategories = mysqlTable("kpi_categories", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  category: varchar("category", { length: 100 }),
-  unit: varchar("unit", { length: 50 }),
-  targetValue: decimal("targetValue", { precision: 10, scale: 2 }),
-  isSystemTemplate: int("isSystemTemplate").default(0),
+  sortOrder: int("sortOrder").default(0),
+  isSystemCategory: int("isSystemCategory").default(0),
+  requiresPatientInfo: int("requiresPatientInfo").default(0), // 1 for Mandatory & Respiratory
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type KpiTemplate = typeof kpiTemplates.$inferSelect;
-export type InsertKpiTemplate = typeof kpiTemplates.$inferInsert;
+export type KpiCategory = typeof kpiCategories.$inferSelect;
+export type InsertKpiCategory = typeof kpiCategories.$inferInsert;
 
 /**
- * KPI Entries - actual KPI data entries with status and values
+ * KPI Indicators - the actual KPI metrics (e.g., Fall Incidents, NIV Cases, RDU Sessions)
  */
-export const kpiEntries = mysqlTable("kpi_entries", {
+export const kpiIndicators = mysqlTable("kpi_indicators", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unit: varchar("unit", { length: 50 }).default("cases"),
+  targetValue: decimal("targetValue", { precision: 10, scale: 2 }),
+  sortOrder: int("sortOrder").default(0),
+  isSystemIndicator: int("isSystemIndicator").default(0),
+  requiresPatientInfo: int("requiresPatientInfo").default(0), // 1 if needs patient details
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KpiIndicator = typeof kpiIndicators.$inferSelect;
+export type InsertKpiIndicator = typeof kpiIndicators.$inferInsert;
+
+/**
+ * Monthly KPI Data - stores the aggregated case counts per month (for Renal-type KPIs)
+ */
+export const monthlyKpiData = mysqlTable("monthly_kpi_data", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   departmentId: int("departmentId").notNull(),
-  templateId: int("templateId"),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  assignedTo: varchar("assignedTo", { length: 255 }),
-  startDate: timestamp("startDate"),
-  endDate: timestamp("endDate"),
-  targetValue: decimal("targetValue", { precision: 10, scale: 2 }),
-  actualValue: decimal("actualValue", { precision: 10, scale: 2 }),
-  unit: varchar("unit", { length: 50 }),
-  status: mysqlEnum("status", ["not_started", "in_progress", "complete", "overdue", "on_hold"]).default("not_started").notNull(),
-  risk: mysqlEnum("risk", ["low", "medium", "high"]).default("low").notNull(),
-  priority: mysqlEnum("priority", ["low", "medium", "high"]).default("medium").notNull(),
-  comments: text("comments"),
-  sortOrder: int("sortOrder").default(0),
+  indicatorId: int("indicatorId").notNull(),
+  year: int("year").notNull(),
+  month: int("month").notNull(), // 1-12
+  value: decimal("value", { precision: 10, scale: 2 }).default("0"),
+  notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type KpiEntry = typeof kpiEntries.$inferSelect;
-export type InsertKpiEntry = typeof kpiEntries.$inferInsert;
+export type MonthlyKpiData = typeof monthlyKpiData.$inferSelect;
+export type InsertMonthlyKpiData = typeof monthlyKpiData.$inferInsert;
 
 /**
- * Dashboard Settings - user preferences for dashboard display
+ * Patient Cases - individual patient records for Mandatory & Respiratory KPIs
+ * Each case is linked to a specific indicator, department, and month
  */
-export const dashboardSettings = mysqlTable("dashboard_settings", {
+export const patientCases = mysqlTable("patient_cases", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
-  projectName: varchar("projectName", { length: 255 }).default("Healthcare KPI Dashboard"),
-  projectStatus: mysqlEnum("projectStatus", ["on_track", "at_risk", "off_track"]).default("on_track"),
-  plannedBudget: decimal("plannedBudget", { precision: 12, scale: 2 }),
-  actualBudget: decimal("actualBudget", { precision: 12, scale: 2 }),
-  pendingDecisions: int("pendingDecisions").default(0),
-  pendingActions: int("pendingActions").default(0),
-  pendingChangeRequests: int("pendingChangeRequests").default(0),
-  chartPreferences: json("chartPreferences"),
+  userId: int("userId").notNull(),
+  departmentId: int("departmentId").notNull(),
+  indicatorId: int("indicatorId").notNull(),
+  year: int("year").notNull(),
+  month: int("month").notNull(), // 1-12
+  hospitalId: varchar("hospitalId", { length: 100 }).notNull(), // Patient Hospital ID
+  patientName: varchar("patientName", { length: 255 }).notNull(), // Patient Name
+  caseDate: timestamp("caseDate"), // Date of incident/case
+  notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type DashboardSettings = typeof dashboardSettings.$inferSelect;
-export type InsertDashboardSettings = typeof dashboardSettings.$inferInsert;
+export type PatientCase = typeof patientCases.$inferSelect;
+export type InsertPatientCase = typeof patientCases.$inferInsert;
+
+/**
+ * Quarterly Reports - aggregated quarterly data for reporting
+ */
+export const quarterlyReports = mysqlTable("quarterly_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  departmentId: int("departmentId").notNull(),
+  year: int("year").notNull(),
+  quarter: int("quarter").notNull(), // 1-4
+  status: mysqlEnum("status", ["draft", "submitted", "approved"]).default("draft"),
+  submittedAt: timestamp("submittedAt"),
+  approvedAt: timestamp("approvedAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuarterlyReport = typeof quarterlyReports.$inferSelect;
+export type InsertQuarterlyReport = typeof quarterlyReports.$inferInsert;

@@ -5,10 +5,11 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
   getDepartments, createDepartment, updateDepartment, deleteDepartment,
-  getKpiTemplates, createKpiTemplate, updateKpiTemplate, deleteKpiTemplate,
-  getKpiEntries, createKpiEntry, updateKpiEntry, deleteKpiEntry, bulkUpdateKpiEntries,
-  getDashboardSettings, upsertDashboardSettings,
-  getKpiStats, initializeSystemTemplates
+  getKpiCategories, createKpiCategory, deleteKpiCategory,
+  getKpiIndicators, createKpiIndicator, deleteKpiIndicator,
+  getMonthlyKpiData, upsertMonthlyKpiData,
+  getPatientCases, getPatientCasesByDepartment, createPatientCase, updatePatientCase, deletePatientCase,
+  getQuarterlySummary, initializeSystemData
 } from "./db";
 
 export const appRouter = router({
@@ -57,155 +58,184 @@ export const appRouter = router({
       }),
   }),
 
-  // KPI Template routes
-  templates: router({
+  // KPI Category routes
+  categories: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      await initializeSystemTemplates();
-      return getKpiTemplates(ctx.user.id);
+      await initializeSystemData();
+      return getKpiCategories(ctx.user.id);
     }),
     
     create: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
         description: z.string().optional(),
-        category: z.string().optional(),
-        unit: z.string().optional(),
-        targetValue: z.string().optional(),
+        sortOrder: z.number().optional(),
+        requiresPatientInfo: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return createKpiTemplate({ ...input, userId: ctx.user.id, isSystemTemplate: 0 });
-      }),
-    
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1).optional(),
-        description: z.string().optional(),
-        category: z.string().optional(),
-        unit: z.string().optional(),
-        targetValue: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const { id, ...data } = input;
-        return updateKpiTemplate(id, ctx.user.id, data);
+        return createKpiCategory({ 
+          ...input, 
+          userId: ctx.user.id, 
+          isSystemCategory: 0,
+          requiresPatientInfo: input.requiresPatientInfo ? 1 : 0,
+        });
       }),
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        return deleteKpiTemplate(input.id, ctx.user.id);
+        return deleteKpiCategory(input.id, ctx.user.id);
       }),
   }),
 
-  // KPI Entry routes
-  entries: router({
+  // KPI Indicator routes
+  indicators: router({
     list: protectedProcedure
-      .input(z.object({ departmentId: z.number().optional() }).optional())
+      .input(z.object({ categoryId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        return getKpiEntries(ctx.user.id, input?.departmentId);
+        await initializeSystemData();
+        return getKpiIndicators(ctx.user.id, input?.categoryId);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        name: z.string().min(1),
+        description: z.string().optional(),
+        unit: z.string().optional(),
+        targetValue: z.string().optional(),
+        sortOrder: z.number().optional(),
+        requiresPatientInfo: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return createKpiIndicator({ 
+          ...input, 
+          userId: ctx.user.id, 
+          isSystemIndicator: 0,
+          requiresPatientInfo: input.requiresPatientInfo ? 1 : 0,
+        });
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return deleteKpiIndicator(input.id, ctx.user.id);
+      }),
+  }),
+
+  // Monthly KPI Data routes
+  monthlyData: router({
+    get: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        year: z.number(),
+        quarter: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getMonthlyKpiData(ctx.user.id, input.departmentId, input.year, input.quarter);
+      }),
+    
+    upsert: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        indicatorId: z.number(),
+        year: z.number(),
+        month: z.number(),
+        value: z.string(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return upsertMonthlyKpiData({ ...input, userId: ctx.user.id });
+      }),
+    
+    bulkUpsert: protectedProcedure
+      .input(z.array(z.object({
+        departmentId: z.number(),
+        indicatorId: z.number(),
+        year: z.number(),
+        month: z.number(),
+        value: z.string(),
+        notes: z.string().optional(),
+      })))
+      .mutation(async ({ ctx, input }) => {
+        const results = [];
+        for (const item of input) {
+          const result = await upsertMonthlyKpiData({ ...item, userId: ctx.user.id });
+          results.push(result);
+        }
+        return results;
+      }),
+  }),
+
+  // Patient Case routes
+  patientCases: router({
+    list: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        indicatorId: z.number(),
+        year: z.number(),
+        month: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getPatientCases(ctx.user.id, input.departmentId, input.indicatorId, input.year, input.month);
+      }),
+    
+    listByDepartment: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        year: z.number(),
+        quarter: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getPatientCasesByDepartment(ctx.user.id, input.departmentId, input.year, input.quarter);
       }),
     
     create: protectedProcedure
       .input(z.object({
         departmentId: z.number(),
-        templateId: z.number().optional(),
-        name: z.string().min(1),
-        description: z.string().optional(),
-        assignedTo: z.string().optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        targetValue: z.string().optional(),
-        actualValue: z.string().optional(),
-        unit: z.string().optional(),
-        status: z.enum(["not_started", "in_progress", "complete", "overdue", "on_hold"]).optional(),
-        risk: z.enum(["low", "medium", "high"]).optional(),
-        priority: z.enum(["low", "medium", "high"]).optional(),
-        comments: z.string().optional(),
-        sortOrder: z.number().optional(),
+        indicatorId: z.number(),
+        year: z.number(),
+        month: z.number(),
+        hospitalId: z.string().min(1),
+        patientName: z.string().min(1),
+        caseDate: z.date().optional(),
+        notes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return createKpiEntry({ ...input, userId: ctx.user.id });
+        return createPatientCase({ ...input, userId: ctx.user.id });
       }),
     
     update: protectedProcedure
       .input(z.object({
         id: z.number(),
-        departmentId: z.number().optional(),
-        templateId: z.number().optional(),
-        name: z.string().min(1).optional(),
-        description: z.string().optional(),
-        assignedTo: z.string().optional(),
-        startDate: z.date().nullable().optional(),
-        endDate: z.date().nullable().optional(),
-        targetValue: z.string().optional(),
-        actualValue: z.string().optional(),
-        unit: z.string().optional(),
-        status: z.enum(["not_started", "in_progress", "complete", "overdue", "on_hold"]).optional(),
-        risk: z.enum(["low", "medium", "high"]).optional(),
-        priority: z.enum(["low", "medium", "high"]).optional(),
-        comments: z.string().optional(),
-        sortOrder: z.number().optional(),
+        hospitalId: z.string().min(1).optional(),
+        patientName: z.string().min(1).optional(),
+        caseDate: z.date().optional(),
+        notes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { id, ...data } = input;
-        return updateKpiEntry(id, ctx.user.id, data);
+        return updatePatientCase(id, ctx.user.id, data);
       }),
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        return deleteKpiEntry(input.id, ctx.user.id);
-      }),
-    
-    bulkUpdate: protectedProcedure
-      .input(z.array(z.object({
-        id: z.number(),
-        data: z.object({
-          name: z.string().optional(),
-          assignedTo: z.string().optional(),
-          startDate: z.date().nullable().optional(),
-          endDate: z.date().nullable().optional(),
-          targetValue: z.string().optional(),
-          actualValue: z.string().optional(),
-          status: z.enum(["not_started", "in_progress", "complete", "overdue", "on_hold"]).optional(),
-          risk: z.enum(["low", "medium", "high"]).optional(),
-          priority: z.enum(["low", "medium", "high"]).optional(),
-          comments: z.string().optional(),
-          sortOrder: z.number().optional(),
-        }),
-      })))
-      .mutation(async ({ ctx, input }) => {
-        return bulkUpdateKpiEntries(ctx.user.id, input);
-      }),
-  }),
-
-  // Dashboard settings routes
-  settings: router({
-    get: protectedProcedure.query(async ({ ctx }) => {
-      return getDashboardSettings(ctx.user.id);
-    }),
-    
-    update: protectedProcedure
-      .input(z.object({
-        projectName: z.string().optional(),
-        projectStatus: z.enum(["on_track", "at_risk", "off_track"]).optional(),
-        plannedBudget: z.string().optional(),
-        actualBudget: z.string().optional(),
-        pendingDecisions: z.number().optional(),
-        pendingActions: z.number().optional(),
-        pendingChangeRequests: z.number().optional(),
-        chartPreferences: z.any().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        return upsertDashboardSettings(ctx.user.id, input);
+        return deletePatientCase(input.id, ctx.user.id);
       }),
   }),
 
   // Analytics routes
   analytics: router({
-    stats: protectedProcedure.query(async ({ ctx }) => {
-      return getKpiStats(ctx.user.id);
-    }),
+    quarterlySummary: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        year: z.number(),
+        quarter: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getQuarterlySummary(ctx.user.id, input.departmentId, input.year, input.quarter);
+      }),
   }),
 });
 

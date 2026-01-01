@@ -1,11 +1,13 @@
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { eq, and, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
-  departments, InsertDepartment, Department,
-  kpiTemplates, InsertKpiTemplate, KpiTemplate,
-  kpiEntries, InsertKpiEntry, KpiEntry,
-  dashboardSettings, InsertDashboardSettings, DashboardSettings
+  departments, InsertDepartment,
+  kpiCategories, InsertKpiCategory,
+  kpiIndicators, InsertKpiIndicator,
+  monthlyKpiData, InsertMonthlyKpiData,
+  patientCases, InsertPatientCase,
+  quarterlyReports, InsertQuarterlyReport
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -118,191 +120,287 @@ export async function updateDepartment(id: number, userId: number, data: Partial
 export async function deleteDepartment(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(kpiEntries).where(and(eq(kpiEntries.departmentId, id), eq(kpiEntries.userId, userId)));
+  // Delete related data first
+  await db.delete(monthlyKpiData).where(and(eq(monthlyKpiData.departmentId, id), eq(monthlyKpiData.userId, userId)));
+  await db.delete(patientCases).where(and(eq(patientCases.departmentId, id), eq(patientCases.userId, userId)));
+  await db.delete(quarterlyReports).where(and(eq(quarterlyReports.departmentId, id), eq(quarterlyReports.userId, userId)));
   await db.delete(departments).where(and(eq(departments.id, id), eq(departments.userId, userId)));
   return { success: true };
 }
 
-// KPI Template operations
-export async function getKpiTemplates(userId: number) {
+// KPI Category operations
+export async function getKpiCategories(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(kpiTemplates)
-    .where(sql`${kpiTemplates.isSystemTemplate} = 1 OR ${kpiTemplates.userId} = ${userId}`)
-    .orderBy(asc(kpiTemplates.category), asc(kpiTemplates.name));
+  return db.select().from(kpiCategories)
+    .where(sql`${kpiCategories.isSystemCategory} = 1 OR ${kpiCategories.userId} = ${userId}`)
+    .orderBy(asc(kpiCategories.sortOrder), asc(kpiCategories.name));
 }
 
-export async function createKpiTemplate(data: InsertKpiTemplate) {
+export async function createKpiCategory(data: InsertKpiCategory) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(kpiTemplates).values(data);
+  const result = await db.insert(kpiCategories).values(data);
   return { id: Number(result[0].insertId), ...data };
 }
 
-export async function updateKpiTemplate(id: number, userId: number, data: Partial<InsertKpiTemplate>) {
+export async function updateKpiCategory(id: number, userId: number, data: Partial<InsertKpiCategory>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(kpiTemplates).set(data).where(and(eq(kpiTemplates.id, id), eq(kpiTemplates.userId, userId)));
+  await db.update(kpiCategories).set(data).where(and(eq(kpiCategories.id, id), eq(kpiCategories.userId, userId)));
   return { id, ...data };
 }
 
-export async function deleteKpiTemplate(id: number, userId: number) {
+export async function deleteKpiCategory(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(kpiTemplates).where(and(eq(kpiTemplates.id, id), eq(kpiTemplates.userId, userId)));
+  await db.delete(kpiCategories).where(and(eq(kpiCategories.id, id), eq(kpiCategories.userId, userId)));
   return { success: true };
 }
 
-// KPI Entry operations
-export async function getKpiEntries(userId: number, departmentId?: number) {
+// KPI Indicator operations
+export async function getKpiIndicators(userId: number, categoryId?: number) {
   const db = await getDb();
   if (!db) return [];
   
-  if (departmentId) {
-    return db.select().from(kpiEntries)
-      .where(and(eq(kpiEntries.userId, userId), eq(kpiEntries.departmentId, departmentId)))
-      .orderBy(asc(kpiEntries.sortOrder), asc(kpiEntries.createdAt));
+  if (categoryId) {
+    return db.select().from(kpiIndicators)
+      .where(and(
+        sql`(${kpiIndicators.isSystemIndicator} = 1 OR ${kpiIndicators.userId} = ${userId})`,
+        eq(kpiIndicators.categoryId, categoryId)
+      ))
+      .orderBy(asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
   }
   
-  return db.select().from(kpiEntries)
-    .where(eq(kpiEntries.userId, userId))
-    .orderBy(asc(kpiEntries.departmentId), asc(kpiEntries.sortOrder), asc(kpiEntries.createdAt));
+  return db.select().from(kpiIndicators)
+    .where(sql`${kpiIndicators.isSystemIndicator} = 1 OR ${kpiIndicators.userId} = ${userId}`)
+    .orderBy(asc(kpiIndicators.categoryId), asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
 }
 
-export async function createKpiEntry(data: InsertKpiEntry) {
+export async function createKpiIndicator(data: InsertKpiIndicator) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(kpiEntries).values(data);
+  const result = await db.insert(kpiIndicators).values(data);
   return { id: Number(result[0].insertId), ...data };
 }
 
-export async function updateKpiEntry(id: number, userId: number, data: Partial<InsertKpiEntry>) {
+export async function updateKpiIndicator(id: number, userId: number, data: Partial<InsertKpiIndicator>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(kpiEntries).set(data).where(and(eq(kpiEntries.id, id), eq(kpiEntries.userId, userId)));
+  await db.update(kpiIndicators).set(data).where(and(eq(kpiIndicators.id, id), eq(kpiIndicators.userId, userId)));
   return { id, ...data };
 }
 
-export async function deleteKpiEntry(id: number, userId: number) {
+export async function deleteKpiIndicator(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(kpiEntries).where(and(eq(kpiEntries.id, id), eq(kpiEntries.userId, userId)));
+  await db.delete(kpiIndicators).where(and(eq(kpiIndicators.id, id), eq(kpiIndicators.userId, userId)));
   return { success: true };
 }
 
-export async function bulkUpdateKpiEntries(userId: number, entries: Array<{ id: number; data: Partial<InsertKpiEntry> }>) {
+// Monthly KPI Data operations
+export async function getMonthlyKpiData(userId: number, departmentId: number, year: number, quarter?: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return [];
   
-  for (const entry of entries) {
-    await db.update(kpiEntries)
-      .set(entry.data)
-      .where(and(eq(kpiEntries.id, entry.id), eq(kpiEntries.userId, userId)));
+  let monthStart = 1;
+  let monthEnd = 12;
+  
+  if (quarter) {
+    monthStart = (quarter - 1) * 3 + 1;
+    monthEnd = quarter * 3;
   }
-  return { success: true };
+  
+  return db.select().from(monthlyKpiData)
+    .where(and(
+      eq(monthlyKpiData.userId, userId),
+      eq(monthlyKpiData.departmentId, departmentId),
+      eq(monthlyKpiData.year, year),
+      sql`${monthlyKpiData.month} >= ${monthStart} AND ${monthlyKpiData.month} <= ${monthEnd}`
+    ))
+    .orderBy(asc(monthlyKpiData.indicatorId), asc(monthlyKpiData.month));
 }
 
-// Dashboard Settings operations
-export async function getDashboardSettings(userId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(dashboardSettings).where(eq(dashboardSettings.userId, userId)).limit(1);
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function upsertDashboardSettings(userId: number, data: Partial<InsertDashboardSettings>) {
+export async function upsertMonthlyKpiData(data: InsertMonthlyKpiData) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const existing = await getDashboardSettings(userId);
-  if (existing) {
-    await db.update(dashboardSettings).set(data).where(eq(dashboardSettings.userId, userId));
-    return { ...existing, ...data };
+  // Check if record exists
+  const existing = await db.select().from(monthlyKpiData)
+    .where(and(
+      eq(monthlyKpiData.userId, data.userId),
+      eq(monthlyKpiData.departmentId, data.departmentId),
+      eq(monthlyKpiData.indicatorId, data.indicatorId),
+      eq(monthlyKpiData.year, data.year),
+      eq(monthlyKpiData.month, data.month)
+    ))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    await db.update(monthlyKpiData)
+      .set({ value: data.value, notes: data.notes })
+      .where(eq(monthlyKpiData.id, existing[0].id));
+    return { ...existing[0], value: data.value, notes: data.notes };
   } else {
-    const result = await db.insert(dashboardSettings).values({ userId, ...data });
-    return { id: Number(result[0].insertId), userId, ...data };
+    const result = await db.insert(monthlyKpiData).values(data);
+    return { id: Number(result[0].insertId), ...data };
   }
 }
 
-// Analytics operations
-export async function getKpiStats(userId: number) {
+// Patient Case operations
+export async function getPatientCases(userId: number, departmentId: number, indicatorId: number, year: number, month?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (month) {
+    return db.select().from(patientCases)
+      .where(and(
+        eq(patientCases.userId, userId),
+        eq(patientCases.departmentId, departmentId),
+        eq(patientCases.indicatorId, indicatorId),
+        eq(patientCases.year, year),
+        eq(patientCases.month, month)
+      ))
+      .orderBy(asc(patientCases.caseDate));
+  }
+  
+  return db.select().from(patientCases)
+    .where(and(
+      eq(patientCases.userId, userId),
+      eq(patientCases.departmentId, departmentId),
+      eq(patientCases.indicatorId, indicatorId),
+      eq(patientCases.year, year)
+    ))
+    .orderBy(asc(patientCases.month), asc(patientCases.caseDate));
+}
+
+export async function getPatientCasesByDepartment(userId: number, departmentId: number, year: number, quarter?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let monthStart = 1;
+  let monthEnd = 12;
+  
+  if (quarter) {
+    monthStart = (quarter - 1) * 3 + 1;
+    monthEnd = quarter * 3;
+  }
+  
+  return db.select().from(patientCases)
+    .where(and(
+      eq(patientCases.userId, userId),
+      eq(patientCases.departmentId, departmentId),
+      eq(patientCases.year, year),
+      sql`${patientCases.month} >= ${monthStart} AND ${patientCases.month} <= ${monthEnd}`
+    ))
+    .orderBy(asc(patientCases.indicatorId), asc(patientCases.month), asc(patientCases.caseDate));
+}
+
+export async function createPatientCase(data: InsertPatientCase) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(patientCases).values(data);
+  return { id: Number(result[0].insertId), ...data };
+}
+
+export async function updatePatientCase(id: number, userId: number, data: Partial<InsertPatientCase>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(patientCases).set(data).where(and(eq(patientCases.id, id), eq(patientCases.userId, userId)));
+  return { id, ...data };
+}
+
+export async function deletePatientCase(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(patientCases).where(and(eq(patientCases.id, id), eq(patientCases.userId, userId)));
+  return { success: true };
+}
+
+// Analytics - get quarterly summary
+export async function getQuarterlySummary(userId: number, departmentId: number, year: number, quarter: number) {
   const db = await getDb();
   if (!db) return null;
   
-  const entries = await db.select().from(kpiEntries).where(eq(kpiEntries.userId, userId));
+  const monthStart = (quarter - 1) * 3 + 1;
+  const monthEnd = quarter * 3;
+  const months = [monthStart, monthStart + 1, monthStart + 2];
   
-  const statusCounts = {
-    not_started: 0,
-    in_progress: 0,
-    complete: 0,
-    overdue: 0,
-    on_hold: 0
-  };
+  // Get all indicators
+  const indicators = await getKpiIndicators(userId);
   
-  const priorityCounts = {
-    low: 0,
-    medium: 0,
-    high: 0
-  };
+  // Get monthly data
+  const monthlyData = await db.select().from(monthlyKpiData)
+    .where(and(
+      eq(monthlyKpiData.userId, userId),
+      eq(monthlyKpiData.departmentId, departmentId),
+      eq(monthlyKpiData.year, year),
+      sql`${monthlyKpiData.month} >= ${monthStart} AND ${monthlyKpiData.month} <= ${monthEnd}`
+    ));
   
-  const riskCounts = {
-    low: 0,
-    medium: 0,
-    high: 0
-  };
-  
-  let totalTarget = 0;
-  let totalActual = 0;
-  
-  entries.forEach(entry => {
-    statusCounts[entry.status]++;
-    priorityCounts[entry.priority]++;
-    riskCounts[entry.risk]++;
-    
-    if (entry.targetValue) totalTarget += Number(entry.targetValue);
-    if (entry.actualValue) totalActual += Number(entry.actualValue);
-  });
-  
-  const total = entries.length;
-  const completionRate = total > 0 ? (statusCounts.complete / total) * 100 : 0;
-  const variance = totalTarget > 0 ? ((totalActual - totalTarget) / totalTarget) * 100 : 0;
+  // Get patient cases count by indicator and month
+  const caseCounts = await db.select({
+    indicatorId: patientCases.indicatorId,
+    month: patientCases.month,
+    count: sql<number>`COUNT(*)`.as('count')
+  }).from(patientCases)
+    .where(and(
+      eq(patientCases.userId, userId),
+      eq(patientCases.departmentId, departmentId),
+      eq(patientCases.year, year),
+      sql`${patientCases.month} >= ${monthStart} AND ${patientCases.month} <= ${monthEnd}`
+    ))
+    .groupBy(patientCases.indicatorId, patientCases.month);
   
   return {
-    total,
-    statusCounts,
-    priorityCounts,
-    riskCounts,
-    completionRate,
-    totalTarget,
-    totalActual,
-    variance
+    year,
+    quarter,
+    months,
+    indicators,
+    monthlyData,
+    caseCounts
   };
 }
 
-// Initialize system templates
-export async function initializeSystemTemplates() {
+// Initialize system categories and indicators
+export async function initializeSystemData() {
   const db = await getDb();
   if (!db) return;
   
-  const existingTemplates = await db.select().from(kpiTemplates).where(eq(kpiTemplates.isSystemTemplate, 1));
-  if (existingTemplates.length > 0) return;
+  // Check if already initialized
+  const existingCategories = await db.select().from(kpiCategories).where(eq(kpiCategories.isSystemCategory, 1));
+  if (existingCategories.length > 0) return;
   
-  const healthcareTemplates: InsertKpiTemplate[] = [
-    { name: "Fall Incidents", description: "Number of patient fall incidents", category: "Patient Safety", unit: "incidents", targetValue: "0", isSystemTemplate: 1 },
-    { name: "Needle Stick Injuries", description: "Number of needle stick injuries among staff", category: "Staff Safety", unit: "incidents", targetValue: "0", isSystemTemplate: 1 },
-    { name: "Defaulters", description: "Number of patients who defaulted on treatment", category: "Patient Compliance", unit: "patients", targetValue: "0", isSystemTemplate: 1 },
-    { name: "Medication Errors", description: "Number of medication administration errors", category: "Patient Safety", unit: "errors", targetValue: "0", isSystemTemplate: 1 },
-    { name: "Hospital Acquired Infections", description: "Rate of hospital acquired infections", category: "Infection Control", unit: "per 1000 patient days", targetValue: "0", isSystemTemplate: 1 },
-    { name: "Patient Satisfaction Score", description: "Average patient satisfaction rating", category: "Quality", unit: "score (1-10)", targetValue: "9", isSystemTemplate: 1 },
-    { name: "Average Length of Stay", description: "Average patient length of stay", category: "Efficiency", unit: "days", targetValue: "5", isSystemTemplate: 1 },
-    { name: "Bed Occupancy Rate", description: "Percentage of beds occupied", category: "Efficiency", unit: "%", targetValue: "85", isSystemTemplate: 1 },
-    { name: "Readmission Rate", description: "30-day readmission rate", category: "Quality", unit: "%", targetValue: "5", isSystemTemplate: 1 },
-    { name: "Staff Turnover Rate", description: "Annual staff turnover percentage", category: "HR", unit: "%", targetValue: "10", isSystemTemplate: 1 },
-    { name: "Training Completion Rate", description: "Staff training completion percentage", category: "HR", unit: "%", targetValue: "100", isSystemTemplate: 1 },
-    { name: "Hand Hygiene Compliance", description: "Hand hygiene compliance rate", category: "Infection Control", unit: "%", targetValue: "95", isSystemTemplate: 1 },
+  // Create system categories
+  const categoryData: InsertKpiCategory[] = [
+    { name: "Mandatory", description: "Mandatory safety indicators", sortOrder: 1, isSystemCategory: 1, requiresPatientInfo: 1 },
+    { name: "Respiratory", description: "Respiratory care indicators", sortOrder: 2, isSystemCategory: 1, requiresPatientInfo: 1 },
+    { name: "Renal", description: "Renal care indicators", sortOrder: 3, isSystemCategory: 1, requiresPatientInfo: 0 },
   ];
   
-  for (const template of healthcareTemplates) {
-    await db.insert(kpiTemplates).values(template);
+  for (const cat of categoryData) {
+    await db.insert(kpiCategories).values(cat);
+  }
+  
+  // Get inserted categories
+  const categories = await db.select().from(kpiCategories).where(eq(kpiCategories.isSystemCategory, 1));
+  const mandatoryId = categories.find(c => c.name === "Mandatory")?.id;
+  const respiratoryId = categories.find(c => c.name === "Respiratory")?.id;
+  const renalId = categories.find(c => c.name === "Renal")?.id;
+  
+  // Create system indicators
+  const indicatorData: InsertKpiIndicator[] = [
+    // Mandatory
+    { categoryId: mandatoryId!, name: "Pressure Sore", description: "Number of pressure sore incidents", unit: "cases", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    { categoryId: mandatoryId!, name: "Fall Incidents", description: "Number of patient fall incidents", unit: "cases", sortOrder: 2, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    // Respiratory
+    { categoryId: respiratoryId!, name: "NIV Cases", description: "Non-invasive ventilation cases", unit: "cases", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    { categoryId: respiratoryId!, name: "Intubated Cases", description: "Intubation cases", unit: "cases", sortOrder: 2, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    // Renal
+    { categoryId: renalId!, name: "RDU Sessions", description: "Renal dialysis unit sessions", unit: "sessions", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 0 },
+  ];
+  
+  for (const ind of indicatorData) {
+    await db.insert(kpiIndicators).values(ind);
   }
 }

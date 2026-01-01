@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -32,171 +32,202 @@ function createAuthContext(): { ctx: TrpcContext } {
 }
 
 describe("KPI Dashboard API", () => {
-  describe("departments", () => {
-    it("should return empty array when no departments exist", async () => {
+  describe("departments router", () => {
+    it("should list departments for authenticated user", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
-      const departments = await caller.departments.list();
-      expect(Array.isArray(departments)).toBe(true);
+
+      const result = await caller.departments.list();
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should create a new department", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.departments.create({
+        name: "Test Department",
+        description: "A test department",
+        color: "#3B82F6",
+      });
+
+      expect(result).toHaveProperty("id");
+      expect(result.name).toBe("Test Department");
+    });
+
+    it("should reject empty department name", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      await expect(
+        caller.departments.create({ name: "" })
+      ).rejects.toThrow();
     });
   });
 
-  describe("templates", () => {
-    it("should return KPI templates including system templates", async () => {
+  describe("categories router", () => {
+    it("should list KPI categories including system categories", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
-      const templates = await caller.templates.list();
-      expect(Array.isArray(templates)).toBe(true);
+
+      const result = await caller.categories.list();
+
+      expect(Array.isArray(result)).toBe(true);
+      // Should have system categories initialized
+      const categoryNames = result.map((c: { name: string }) => c.name);
+      expect(categoryNames).toContain("Mandatory");
+      expect(categoryNames).toContain("Respiratory");
+      expect(categoryNames).toContain("Renal");
+    });
+
+    it("should create a custom category", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.categories.create({
+        name: "Custom Category",
+        requiresPatientInfo: true,
+      });
+
+      expect(result).toHaveProperty("id");
+      expect(result.name).toBe("Custom Category");
     });
   });
 
-  describe("entries", () => {
-    it("should return empty array when no entries exist", async () => {
+  describe("indicators router", () => {
+    it("should list KPI indicators including system indicators", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
-      const entries = await caller.entries.list();
-      expect(Array.isArray(entries)).toBe(true);
-    });
 
-    it("should accept departmentId filter parameter", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-      
-      const entries = await caller.entries.list({ departmentId: 1 });
-      expect(Array.isArray(entries)).toBe(true);
-    });
-  });
+      const result = await caller.indicators.list();
 
-  describe("analytics", () => {
-    it("should return stats with proper structure", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-      
-      const stats = await caller.analytics.stats();
-      
-      // Stats should have the expected structure
-      expect(stats).toHaveProperty("total");
-      expect(stats).toHaveProperty("statusCounts");
-      expect(stats).toHaveProperty("priorityCounts");
-      expect(stats).toHaveProperty("riskCounts");
-      expect(stats).toHaveProperty("completionRate");
-      expect(stats).toHaveProperty("totalTarget");
-      expect(stats).toHaveProperty("totalActual");
-      expect(stats).toHaveProperty("variance");
-      
-      // Status counts should have all status types
-      expect(stats?.statusCounts).toHaveProperty("not_started");
-      expect(stats?.statusCounts).toHaveProperty("in_progress");
-      expect(stats?.statusCounts).toHaveProperty("complete");
-      expect(stats?.statusCounts).toHaveProperty("overdue");
-      expect(stats?.statusCounts).toHaveProperty("on_hold");
-      
-      // Priority counts should have all priority types
-      expect(stats?.priorityCounts).toHaveProperty("low");
-      expect(stats?.priorityCounts).toHaveProperty("medium");
-      expect(stats?.priorityCounts).toHaveProperty("high");
-      
-      // Risk counts should have all risk types
-      expect(stats?.riskCounts).toHaveProperty("low");
-      expect(stats?.riskCounts).toHaveProperty("medium");
-      expect(stats?.riskCounts).toHaveProperty("high");
-    });
-
-    it("should return zero completion rate when no entries", async () => {
-      const { ctx } = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-      
-      const stats = await caller.analytics.stats();
-      expect(stats?.completionRate).toBe(0);
-      expect(stats?.total).toBe(0);
+      expect(Array.isArray(result)).toBe(true);
+      // Should have system indicators initialized
+      const indicatorNames = result.map((i: { name: string }) => i.name);
+      expect(indicatorNames).toContain("Pressure Sore");
+      expect(indicatorNames).toContain("Fall Incidents");
+      expect(indicatorNames).toContain("NIV Cases");
+      expect(indicatorNames).toContain("Intubated Cases");
+      expect(indicatorNames).toContain("RDU Sessions");
     });
   });
 
-  describe("settings", () => {
-    it("should return null when no settings exist", async () => {
+  describe("monthlyData router", () => {
+    it("should upsert monthly KPI data", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
-      const settings = await caller.settings.get();
-      // Settings can be null if not yet created
-      expect(settings === null || typeof settings === "object").toBe(true);
+
+      // First create a department
+      const dept = await caller.departments.create({
+        name: "Monthly Data Test Dept",
+      });
+
+      // Get indicators
+      const indicators = await caller.indicators.list();
+      const rduIndicator = indicators.find((i: { name: string }) => i.name === "RDU Sessions");
+
+      if (rduIndicator) {
+        const result = await caller.monthlyData.upsert({
+          departmentId: dept.id,
+          indicatorId: rduIndicator.id,
+          year: 2026,
+          month: 7,
+          value: "11",
+        });
+
+        expect(result).toHaveProperty("id");
+        expect(result.value).toBe("11");
+      }
+    });
+
+    it("should get monthly KPI data for a quarter", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // First create a department
+      const dept = await caller.departments.create({
+        name: "Quarterly Data Test Dept",
+      });
+
+      const result = await caller.monthlyData.get({
+        departmentId: dept.id,
+        year: 2026,
+        quarter: 3,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 
-  describe("auth", () => {
-    it("should return user info for authenticated user", async () => {
+  describe("patientCases router", () => {
+    it("should create a patient case", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
-      const user = await caller.auth.me();
-      expect(user).toBeDefined();
-      expect(user?.openId).toBe("test-user-123");
-      expect(user?.email).toBe("test@example.com");
+
+      // Create department
+      const dept = await caller.departments.create({
+        name: "Patient Case Test Dept",
+      });
+
+      // Get indicators
+      const indicators = await caller.indicators.list();
+      const fallIndicator = indicators.find((i: { name: string }) => i.name === "Fall Incidents");
+
+      if (fallIndicator) {
+        const result = await caller.patientCases.create({
+          departmentId: dept.id,
+          indicatorId: fallIndicator.id,
+          year: 2026,
+          month: 7,
+          hospitalId: "H12345",
+          patientName: "John Doe",
+          notes: "Test case",
+        });
+
+        expect(result).toHaveProperty("id");
+        expect(result.hospitalId).toBe("H12345");
+        expect(result.patientName).toBe("John Doe");
+      }
+    });
+
+    it("should list patient cases by department", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      // Create department
+      const dept = await caller.departments.create({
+        name: "List Cases Test Dept",
+      });
+
+      const result = await caller.patientCases.listByDepartment({
+        departmentId: dept.id,
+        year: 2026,
+        quarter: 3,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("auth router", () => {
+    it("should return current user from me query", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.auth.me();
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe("Test User");
+      expect(result?.email).toBe("test@example.com");
     });
 
     it("should logout successfully", async () => {
       const { ctx } = createAuthContext();
       const caller = appRouter.createCaller(ctx);
-      
+
       const result = await caller.auth.logout();
       expect(result.success).toBe(true);
     });
-  });
-});
-
-describe("Input validation", () => {
-  it("should validate department create input", async () => {
-    const { ctx } = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-    
-    // Empty name should fail validation
-    await expect(
-      caller.departments.create({ name: "" })
-    ).rejects.toThrow();
-  });
-
-  it("should validate entry status enum", async () => {
-    const { ctx } = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-    
-    // Invalid status should fail
-    await expect(
-      caller.entries.create({
-        departmentId: 1,
-        name: "Test KPI",
-        status: "invalid_status" as any,
-      })
-    ).rejects.toThrow();
-  });
-
-  it("should validate entry priority enum", async () => {
-    const { ctx } = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-    
-    // Invalid priority should fail
-    await expect(
-      caller.entries.create({
-        departmentId: 1,
-        name: "Test KPI",
-        priority: "invalid_priority" as any,
-      })
-    ).rejects.toThrow();
-  });
-
-  it("should validate entry risk enum", async () => {
-    const { ctx } = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-    
-    // Invalid risk should fail
-    await expect(
-      caller.entries.create({
-        departmentId: 1,
-        name: "Test KPI",
-        risk: "invalid_risk" as any,
-      })
-    ).rejects.toThrow();
   });
 });

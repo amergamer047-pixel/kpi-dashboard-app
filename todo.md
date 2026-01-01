@@ -1,22 +1,28 @@
 # Healthcare KPI Dashboard - TODO
 
-## Core Features
+## Completed Features
 - [x] Database schema for departments, KPI templates, and KPI entries
 - [x] Backend API for CRUD operations on departments and KPIs
 - [x] Excel-like spreadsheet interface with editable cells
-- [x] Pre-configured healthcare KPI templates (fall incidents, needle stick injuries, defaulters)
-- [x] Department-based KPI organization with custom department creation
+- [x] Pre-configured healthcare KPI templates
+- [x] Department-based KPI organization
 - [x] Automatic chart generation (bar, pie, line charts)
-- [x] KPI status tracking with dropdown (Not Started, In Progress, Complete, Overdue, On Hold)
+- [x] KPI status tracking with dropdown
 - [x] Priority and risk level assignment with color-coded badges
-- [x] Automatic calculation of percentages, totals, and variance
-- [x] Dashboard summary view with KPI status distribution and metrics
+- [x] Dashboard summary view
 - [x] Data persistence with database storage
-- [x] Export functionality to CSV format
+- [x] CSV export functionality
 
-## UI/UX
-- [x] Professional dashboard layout with sidebar navigation
-- [x] Excel-like grid interface with familiar interactions
-- [x] Real-time chart updates as data changes
-- [x] Visual status indicators and color coding
-- [x] Responsive design for different screen sizes
+## Monthly KPI Tracking (Redesigned)
+- [x] Redesign schema for monthly case count tracking
+- [x] KPI categories (Mandatory, Respiratory, Renal)
+- [x] Monthly data entry grid (columns: July, August, September, etc.)
+- [x] Quarterly aggregation and totals
+- [x] Pre-configured healthcare KPIs:
+  - Mandatory: Pressure Sore, Fall Incidents
+  - Respiratory: Intubated Cases, NIV Cases
+  - Renal: RDU Sessions
+- [x] Patient tracking (Hospital ID, Name) for Respiratory and Mandatory KPIs
+- [x] Quarterly reporting view
+- [x] Excel (.xlsx) export with monthly breakdown
+

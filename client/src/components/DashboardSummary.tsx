@@ -1,287 +1,287 @@
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Activity,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Target,
+  Users,
+  Stethoscope,
   TrendingUp,
-  TrendingDown,
-  Minus,
+  Building2,
+  Layers,
 } from "lucide-react";
 
-export function DashboardSummary() {
-  const { data: stats, isLoading } = trpc.analytics.stats.useQuery();
-  const { data: settings } = trpc.settings.get.useQuery();
+interface Category {
+  id: number;
+  name: string;
+}
 
-  if (isLoading || !stats) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="h-20 animate-pulse bg-muted rounded"></div>
+interface Indicator {
+  id: number;
+  categoryId: number;
+  name: string;
+  requiresPatientInfo: number | null;
+}
+
+interface PatientCase {
+  indicatorId: number;
+  month: number;
+}
+
+interface MonthlyData {
+  indicatorId: number;
+  month: number;
+  value: string | null;
+}
+
+const QUARTERS = [
+  { value: 1, label: "Q1 (Jan-Mar)", months: [1, 2, 3] },
+  { value: 2, label: "Q2 (Apr-Jun)", months: [4, 5, 6] },
+  { value: 3, label: "Q3 (Jul-Sep)", months: [7, 8, 9] },
+  { value: 4, label: "Q4 (Oct-Dec)", months: [10, 11, 12] },
+];
+
+export function DashboardSummary() {
+  const currentYear = new Date().getFullYear();
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+  
+  const [year, setYear] = useState(currentYear);
+  const [quarter, setQuarter] = useState(currentQuarter);
+
+  const { data: departments = [] } = trpc.departments.list.useQuery();
+  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: indicators = [] } = trpc.indicators.list.useQuery();
+
+  // Get the first department's data as a sample (for summary)
+  const firstDeptId = departments[0]?.id;
+  
+  const { data: monthlyData = [] } = trpc.monthlyData.get.useQuery(
+    { departmentId: firstDeptId!, year, quarter },
+    { enabled: !!firstDeptId }
+  );
+  
+  const { data: patientCases = [] } = trpc.patientCases.listByDepartment.useQuery(
+    { departmentId: firstDeptId!, year, quarter },
+    { enabled: !!firstDeptId }
+  );
+
+  const quarterMonths = QUARTERS.find(q => q.value === quarter)?.months || [];
+
+  // Calculate summary statistics
+  const summaryStats = useMemo(() => {
+    let totalCases = 0;
+    let totalPatientCases = patientCases.length;
+    const categoryTotals: Record<string, number> = {};
+
+    // Initialize category totals
+    categories.forEach((cat: Category) => {
+      categoryTotals[cat.name] = 0;
+    });
+
+    // Count monthly data values
+    monthlyData.forEach((d: MonthlyData) => {
+      const value = parseFloat(d.value || "0");
+      totalCases += value;
+      
+      // Find the indicator's category
+      const indicator = indicators.find((ind: Indicator) => ind.id === d.indicatorId);
+      if (indicator) {
+        const category = categories.find((cat: Category) => cat.id === indicator.categoryId);
+        if (category) {
+          categoryTotals[category.name] += value;
+        }
+      }
+    });
+
+    // Add patient cases to category totals
+    patientCases.forEach((pc: PatientCase) => {
+      const indicator = indicators.find((ind: Indicator) => ind.id === pc.indicatorId);
+      if (indicator) {
+        const category = categories.find((cat: Category) => cat.id === indicator.categoryId);
+        if (category) {
+          categoryTotals[category.name] += 1;
+        }
+      }
+    });
+
+    return {
+      totalDepartments: departments.length,
+      totalIndicators: indicators.length,
+      totalCategories: categories.length,
+      totalCases: totalCases + totalPatientCases,
+      totalPatientCases,
+      categoryTotals,
+    };
+  }, [monthlyData, patientCases, categories, indicators, departments]);
+
+  const statCards = [
+    {
+      title: "Departments",
+      value: summaryStats.totalDepartments,
+      icon: Building2,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "KPI Categories",
+      value: summaryStats.totalCategories,
+      icon: Layers,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "KPI Indicators",
+      value: summaryStats.totalIndicators,
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "Total Cases (Q" + quarter + ")",
+      value: summaryStats.totalCases,
+      icon: Stethoscope,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      title: "Patient Cases",
+      value: summaryStats.totalPatientCases,
+      icon: Users,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Period Selector */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle className="text-lg">Dashboard Summary</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Year:</Label>
+                <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                      <SelectItem key={y} value={y.toString()}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Quarter:</Label>
+                <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUARTERS.map((q) => (
+                      <SelectItem key={q.value} value={q.value.toString()}>
+                        {q.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {statCards.map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
-    );
-  }
 
-  const projectStatus = settings?.projectStatus || "on_track";
-  const projectName = settings?.projectName || "Healthcare KPI Dashboard";
-
-  const statusConfig = {
-    on_track: { label: "On Track", color: "text-green-600", bg: "bg-green-50" },
-    at_risk: { label: "At Risk", color: "text-yellow-600", bg: "bg-yellow-50" },
-    off_track: { label: "Off Track", color: "text-red-600", bg: "bg-red-50" },
-  };
-
-  const currentStatus = statusConfig[projectStatus as keyof typeof statusConfig];
-
-  const varianceIcon = stats.variance > 0 ? (
-    <TrendingUp className="h-4 w-4 text-green-500" />
-  ) : stats.variance < 0 ? (
-    <TrendingDown className="h-4 w-4 text-red-500" />
-  ) : (
-    <Minus className="h-4 w-4 text-gray-500" />
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Project Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-card border rounded-lg">
-        <div>
-          <h2 className="text-xl font-bold">{projectName}</h2>
-          <p className="text-sm text-muted-foreground">KPI Dashboard Overview</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className={`px-4 py-2 rounded-full ${currentStatus.bg}`}>
-            <span className={`font-semibold ${currentStatus.color}`}>
-              {currentStatus.label}
-            </span>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">{stats.completionRate.toFixed(0)}%</div>
-            <div className="text-sm text-muted-foreground">Complete</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total KPIs */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total KPIs</p>
-                <p className="text-3xl font-bold">{stats.total}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Target className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Completed */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-3xl font-bold text-green-600">{stats.statusCounts.complete}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <Progress value={stats.completionRate} className="mt-3 h-2" />
-          </CardContent>
-        </Card>
-
-        {/* In Progress */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.statusCounts.in_progress}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Overdue */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                <p className="text-3xl font-bold text-red-600">{stats.statusCounts.overdue}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status and Priority Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Status Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Status Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(stats.statusCounts).map(([status, count]) => {
-                const percentage = stats.total > 0 ? ((count as number) / stats.total) * 100 : 0;
-                const statusLabels: Record<string, string> = {
-                  not_started: "Not Started",
-                  in_progress: "In Progress",
-                  complete: "Complete",
-                  overdue: "Overdue",
-                  on_hold: "On Hold",
-                };
-                const statusColors: Record<string, string> = {
-                  not_started: "bg-gray-500",
-                  in_progress: "bg-blue-500",
-                  complete: "bg-green-500",
-                  overdue: "bg-red-500",
-                  on_hold: "bg-orange-500",
-                };
-                return (
-                  <div key={status} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${statusColors[status]}`}></div>
-                      <span className="text-sm">{statusLabels[status]}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{count as number}</span>
-                      <span className="text-xs text-muted-foreground">({percentage.toFixed(0)}%)</span>
-                    </div>
+      {/* Category Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Category Breakdown - Q{quarter} {year}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {Object.keys(summaryStats.categoryTotals).length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              No categories created yet. Add KPI categories to see breakdown.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(summaryStats.categoryTotals).map(([category, total]) => (
+                <div
+                  key={category}
+                  className="p-4 border rounded-lg bg-muted/20"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{category}</span>
+                    <span className="text-2xl font-bold">{total}</span>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Priority Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Priority Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(stats.priorityCounts).map(([priority, count]) => {
-                const percentage = stats.total > 0 ? ((count as number) / stats.total) * 100 : 0;
-                const priorityColors: Record<string, string> = {
-                  high: "bg-red-500",
-                  medium: "bg-yellow-500",
-                  low: "bg-green-500",
-                };
-                return (
-                  <div key={priority} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${priorityColors[priority]}`}></div>
-                      <span className="text-sm capitalize">{priority}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{count as number}</span>
-                      <span className="text-xs text-muted-foreground">({percentage.toFixed(0)}%)</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Risk Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Risk Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(stats.riskCounts).map(([risk, count]) => {
-                const percentage = stats.total > 0 ? ((count as number) / stats.total) * 100 : 0;
-                const riskColors: Record<string, string> = {
-                  high: "bg-red-500",
-                  medium: "bg-yellow-500",
-                  low: "bg-green-500",
-                };
-                return (
-                  <div key={risk} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${riskColors[risk]}`}></div>
-                      <span className="text-sm capitalize">{risk}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{count as number}</span>
-                      <span className="text-xs text-muted-foreground">({percentage.toFixed(0)}%)</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Target</p>
-                <p className="text-2xl font-bold">{stats.totalTarget.toLocaleString()}</p>
-              </div>
-              <Target className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Actual</p>
-                <p className="text-2xl font-bold">{stats.totalActual.toLocaleString()}</p>
-              </div>
-              <Activity className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Variance</p>
-                <div className="flex items-center gap-2">
-                  <p className={`text-2xl font-bold ${stats.variance >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {stats.variance >= 0 ? "+" : ""}{stats.variance.toFixed(1)}%
-                  </p>
-                  {varianceIcon}
+                  <p className="text-sm text-muted-foreground mt-1">Total cases this quarter</p>
                 </div>
-              </div>
-              <Clock className="h-8 w-8 text-muted-foreground" />
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Department Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Department Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {departments.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              No departments created yet. Add a department to get started.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {departments.map((dept: { id: number; name: string; description: string | null }) => (
+                <div
+                  key={dept.id}
+                  className="p-4 border rounded-lg hover:bg-muted/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h4 className="font-medium">{dept.name}</h4>
+                      {dept.description && (
+                        <p className="text-sm text-muted-foreground">{dept.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
