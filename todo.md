@@ -26,3 +26,12 @@
 - [x] Quarterly reporting view
 - [x] Excel (.xlsx) export with monthly breakdown
 
+
+## Enhanced Settings Controls
+- [x] Comprehensive Settings page with tabs for Departments, Categories, and Indicators
+- [x] Full department management (create, edit, delete with confirmation)
+- [x] Full category management (create, edit, delete with cascade warnings)
+- [x] Full indicator management (create, edit, delete with cascade warnings)
+- [x] Toggle patient tracking option per indicator (Hospital ID, Name fields)
+- [x] Visual feedback for patient tracking enabled/disabled status
+- [x] Bulk operations and better organization in Settings UI
