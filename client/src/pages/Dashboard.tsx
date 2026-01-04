@@ -7,7 +7,7 @@ import { KpiCharts } from "@/components/KpiCharts";
 import { DepartmentManager } from "@/components/DepartmentManager";
 import { ExcelExport } from "@/components/ExcelExport";
 import { KpiSettings } from "@/components/KpiSettings";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -68,7 +68,7 @@ export default function Dashboard() {
   const { loading, user, logout } = useAuth();
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
@@ -84,14 +84,14 @@ export default function Dashboard() {
   });
 
   // Get data for export
-  const firstDeptId = departments[0]?.id;
+  const firstDeptId = selectedDepartmentId || departments[0]?.id;
   const { data: monthlyData = [] } = trpc.monthlyData.get.useQuery(
-    { departmentId: firstDeptId!, year: currentYear, quarter: currentQuarter },
-    { enabled: !!user && !!firstDeptId }
+    { departmentId: firstDeptId || 0, year: currentYear, quarter: currentQuarter },
+    { enabled: !!firstDeptId }
   );
   const { data: patientCases = [] } = trpc.patientCases.listByDepartment.useQuery(
-    { departmentId: firstDeptId!, year: currentYear, quarter: currentQuarter },
-    { enabled: !!user && !!firstDeptId }
+    { departmentId: firstDeptId || 0, year: currentYear, quarter: currentQuarter },
+    { enabled: !!firstDeptId }
   );
 
   const selectedDepartment = departments.find((d: Department) => d.id === selectedDepartmentId);
@@ -103,29 +103,9 @@ export default function Dashboard() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <LayoutDashboard className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Healthcare KPI Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Track and visualize key performance indicators for your healthcare organization.
-              Sign in to access your dashboard.
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in to Continue
-          </Button>
-        </div>
+        <Button onClick={() => (window.location.href = getLoginUrl())}>
+          Sign in to Continue
+        </Button>
       </div>
     );
   }
@@ -138,20 +118,17 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-background flex-col md:flex-row">
+      {/* Sidebar - Responsive */}
       <aside
         className={`${
-          sidebarOpen ? "w-64" : "w-0"
-        } transition-all duration-300 border-r bg-card flex-shrink-0 overflow-hidden`}
+          sidebarOpen ? "w-full md:w-64" : "w-0"
+        } transition-all duration-300 border-r bg-card flex-shrink-0 overflow-hidden fixed md:static top-16 md:top-0 left-0 right-0 bottom-0 md:h-screen z-40`}
       >
-        <div className="flex flex-col h-full w-64">
-          {/* Sidebar Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b">
-            <div className="flex items-center gap-2">
-              <LayoutDashboard className="h-5 w-5 text-primary" />
-              <span className="font-semibold">KPI Dashboard</span>
-            </div>
+        <div className="flex flex-col h-full w-full md:w-64">
+          {/* Sidebar Header - Mobile only */}
+          <div className="h-16 md:hidden flex items-center justify-between px-4 border-b">
+            <span className="font-semibold">Menu</span>
             <Button
               variant="ghost"
               size="icon"
@@ -170,14 +147,17 @@ export default function Dashboard() {
                 {navItems.map((item) => (
                   <button
                     key={item.value}
-                    onClick={() => setActiveTab(item.value)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    onClick={() => {
+                      setActiveTab(item.value);
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm md:text-base ${
                       activeTab === item.value
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted"
                     }`}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                     <span className="font-medium">{item.label}</span>
                   </button>
                 ))}
@@ -198,19 +178,19 @@ export default function Dashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted transition-colors w-full text-left">
-                  <Avatar className="h-8 w-8 border">
+                  <Avatar className="h-8 w-8 border flex-shrink-0">
                     <AvatarFallback className="text-xs font-medium">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user?.name || "-"}</p>
+                    <p className="text-xs md:text-sm font-medium truncate">{user?.name || "-"}</p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email || "-"}</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={logout} className="text-destructive">
+                <DropdownMenuItem onClick={logout} className="text-destructive text-sm">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
@@ -220,28 +200,35 @@ export default function Dashboard() {
         </div>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {/* Top Bar */}
-        <header className="h-16 border-b bg-card/50 backdrop-blur sticky top-0 z-10 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            {!sidebarOpen && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-            <div>
-              <h1 className="text-lg font-semibold">
-                {activeTab === "overview" && "Dashboard Overview"}
-                {activeTab === "data" && "KPI Data Entry"}
-                {activeTab === "charts" && "KPI Analytics"}
+      <main className="flex-1 flex flex-col overflow-hidden w-full">
+        {/* Top Bar - Responsive */}
+        <header className="h-16 border-b bg-card/50 backdrop-blur sticky top-0 z-10 flex items-center justify-between px-3 md:px-6">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-8 w-8"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base md:text-lg font-semibold truncate">
+                {activeTab === "overview" && "Dashboard"}
+                {activeTab === "data" && "KPI Data"}
+                {activeTab === "charts" && "Analytics"}
                 {activeTab === "settings" && "Settings"}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {selectedDepartment ? selectedDepartment.name : "All Departments"}
               </p>
             </div>
@@ -259,27 +246,25 @@ export default function Dashboard() {
           )}
         </header>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Responsive */}
+        <div className="p-3 md:p-6 overflow-auto flex-1">
           {activeTab === "overview" && (
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <DashboardSummary />
               <KpiCharts departmentId={selectedDepartmentId || undefined} />
             </div>
           )}
 
           {activeTab === "data" && (
-            <div className="space-y-6">
-              {selectedDepartmentId ? (
-                <KpiSpreadsheet
-                  departmentId={selectedDepartmentId}
-                  departmentName={selectedDepartment?.name || ""}
-                />
-              ) : departments.length > 0 ? (
-                <div className="space-y-8">
+            <div className="space-y-3 md:space-y-4">
+              {departments.length > 0 ? (
+                <div className="space-y-3 md:space-y-4">
                   {departments.map((dept: Department) => (
                     <Card key={dept.id}>
-                      <CardContent className="pt-6">
+                      <CardHeader className="p-3 md:p-6">
+                        <CardTitle className="text-base md:text-lg">{dept.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 md:p-6 pt-0 md:pt-6 overflow-x-auto">
                         <KpiSpreadsheet
                           departmentId={dept.id}
                           departmentName={dept.name}
@@ -290,10 +275,10 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <Card>
-                  <CardContent className="py-12 text-center">
-                    <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Departments Yet</h3>
-                    <p className="text-muted-foreground mb-4">
+                  <CardContent className="py-8 md:py-12 text-center">
+                    <FileSpreadsheet className="h-10 md:h-12 w-10 md:w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-base md:text-lg font-semibold mb-2">No Departments Yet</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-4">
                       Create a department from the sidebar to start tracking KPIs.
                     </p>
                   </CardContent>
@@ -307,11 +292,12 @@ export default function Dashboard() {
           )}
 
           {activeTab === "settings" && (
-            <KpiSettings />
+            <div className="max-w-6xl">
+              <KpiSettings />
+            </div>
           )}
         </div>
       </main>
     </div>
   );
 }
-

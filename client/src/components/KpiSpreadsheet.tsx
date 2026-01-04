@@ -258,14 +258,14 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <CardTitle className="text-lg">{departmentName} - KPI Data Entry</CardTitle>
-          <div className="flex items-center gap-4">
+      <CardHeader className="pb-3 md:pb-4">
+        <div className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
+          <CardTitle className="text-base md:text-lg">{departmentName} - KPI Data Entry</CardTitle>
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <Label className="text-sm">Year:</Label>
+              <Label className="text-xs md:text-sm">Year:</Label>
               <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-20 md:w-24 text-xs md:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,9 +278,9 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm">Quarter:</Label>
+              <Label className="text-xs md:text-sm">Quarter:</Label>
               <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-28 md:w-36 text-xs md:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

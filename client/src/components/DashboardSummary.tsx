@@ -203,17 +203,17 @@ export function DashboardSummary() {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4">
         {statCards.map((stat) => (
           <Card key={stat.title}>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+            <CardContent className="pt-3 md:pt-6">
+              <div className="flex items-center gap-2 md:gap-4">
+                <div className={`p-2 md:p-3 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className="h-4 md:h-6 w-4 md:w-6" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">{stat.title}</p>
+                  <p className="text-lg md:text-2xl font-bold">{stat.value}</p>
                 </div>
               </div>
             </CardContent>
@@ -224,7 +224,7 @@ export function DashboardSummary() {
       {/* Category Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Category Breakdown - Q{quarter} {year}</CardTitle>
+          <CardTitle className="text-base md:text-lg">Category Breakdown - Q{quarter} {year}</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(summaryStats.categoryTotals).length === 0 ? (
@@ -232,17 +232,17 @@ export function DashboardSummary() {
               No categories created yet. Add KPI categories to see breakdown.
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {Object.entries(summaryStats.categoryTotals).map(([category, total]) => (
                 <div
                   key={category}
-                  className="p-4 border rounded-lg bg-muted/20"
+                  className="p-3 md:p-4 border rounded-lg bg-muted/20"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{category}</span>
-                    <span className="text-2xl font-bold">{total}</span>
+                    <span className="text-xs md:text-base font-medium">{category}</span>
+                    <span className="text-lg md:text-2xl font-bold">{total}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">Total cases this quarter</p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-1">Total cases this quarter</p>
                 </div>
               ))}
             </div>
