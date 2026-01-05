@@ -70,3 +70,16 @@
 - [x] Verify all data persists to database
 - [x] Created new dedicated SettingsPage for full interactivity
 - [x] All 26 backend tests passing
+
+
+## Cleanup & Core Functions
+- [x] Delete all test departments from database
+- [x] Reset system categories to only: Mandatory, Respiratory, Renal
+- [x] Reset system indicators: Pressure Sore, Fall Incidents (Mandatory); NIV, Intubated (Respiratory); RDU Sessions (Renal)
+- [x] Ensure Mandatory and Respiratory indicators have patient tracking enabled
+- [x] Verify quarterly summary calculations (sum of 3 months)
+- [x] Dashboard shows clean data with 1 department, 3 categories, 5 indicators
+- [x] All 26 backend tests passing
+- [x] Patient tracking enabled for Mandatory and Respiratory KPIs
+- [x] Quarterly summary view working (Q1 2026 showing 7 total cases, 5 patient cases)
+- [x] Excel export functionality ready
