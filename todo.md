@@ -55,3 +55,18 @@
 - [x] Test on various screen sizes
 - [x] Ensure touch-friendly buttons and inputs
 - [x] Test navigation on mobile devices
+
+
+## Interactivity Issues - FIXED
+- [x] Fix department creation - add button not working
+- [x] Fix department deletion - delete buttons not responding
+- [x] Fix category creation in Settings
+- [x] Fix indicator/metric creation in Settings
+- [x] Fix KPI data entry - values not being saved
+- [x] Fix patient case tracking - Hospital ID and Name fields not working
+- [x] Test adding new department with categories
+- [x] Test entering monthly values for indicators
+- [x] Test adding patient cases with Hospital ID and Name
+- [x] Verify all data persists to database
+- [x] Created new dedicated SettingsPage for full interactivity
+- [x] All 26 backend tests passing

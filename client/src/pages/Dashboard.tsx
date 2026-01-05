@@ -6,7 +6,7 @@ import { KpiSpreadsheet } from "@/components/KpiSpreadsheet";
 import { KpiCharts } from "@/components/KpiCharts";
 import { DepartmentManager } from "@/components/DepartmentManager";
 import { ExcelExport } from "@/components/ExcelExport";
-import { KpiSettings } from "@/components/KpiSettings";
+import SettingsPage from "@/pages/SettingsPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -292,9 +292,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === "settings" && (
-            <div className="max-w-6xl">
-              <KpiSettings />
-            </div>
+            <SettingsPage />
           )}
         </div>
       </main>
