@@ -1,0 +1,25 @@
+{
+  "query": "DELETE FROM departments WHERE name NOT IN ('male ward');\nDELETE FROM kpi_categories WHERE name NOT IN ('Mandatory', 'Respiratory', 'Renal');\nSELECT COUNT(*) as total_departments FROM departments;\nSELECT COUNT(*) as total_categories FROM kpi_categories;\nSELECT COUNT(*) as total_indicators FROM kpi_indicators;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute DELETE FROM departments WHERE name NOT IN ('male ward');\nDELETE FROM kpi_categories WHERE name NOT IN ('Mandatory', 'Respiratory', 'Renal');\nSELECT COUNT(*) as total_departments FROM departments;\nSELECT COUNT(*) as total_categories FROM kpi_categories;\nSELECT COUNT(*) as total_indicators FROM kpi_indicators;",
+  "rows": [
+    {
+      "total_departments": "1"
+    },
+    {
+      "total_departments": "total_categories"
+    },
+    {
+      "total_departments": "3"
+    },
+    {
+      "total_departments": "total_indicators"
+    },
+    {
+      "total_departments": "5"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_departments\n1\ntotal_categories\n3\ntotal_indicators\n5\n",
+  "stderr": "",
+  "execution_time_ms": 3054
+}
