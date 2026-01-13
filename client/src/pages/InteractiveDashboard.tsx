@@ -31,6 +31,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
 } from "recharts";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,18 +55,22 @@ const MONTHS = [
   "December",
 ];
 
+type ChartType = "bar" | "pie" | "line" | "area";
+
 export default function InteractiveDashboard() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
+  const [chartType, setChartType] = useState<ChartType>("bar");
+  const [viewMode, setViewMode] = useState<"quarterly" | "yearly">("quarterly");
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
   const { data: categories = [], refetch: refetchCats } = trpc.categories.list.useQuery();
   const { data: indicators = [], refetch: refetchInds } = trpc.indicators.list.useQuery();
   const { data: monthlyData = [], refetch: refetchMonthly } = trpc.monthlyData.get.useQuery(
-    { departmentId: selectedDepartmentId || 0, year: selectedYear, quarter: selectedQuarter },
+    { departmentId: selectedDepartmentId || 0, year: selectedYear, quarter: viewMode === "quarterly" ? selectedQuarter : 0 },
     { enabled: !!selectedDepartmentId }
   );
 
@@ -195,6 +203,9 @@ export default function InteractiveDashboard() {
     4: [10, 11, 12],
   }[selectedQuarter] || [];
 
+  const yearMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const displayMonths = viewMode === "yearly" ? yearMonths : quarterMonths;
+
   const summaryStats = useMemo(() => {
     const stats: Record<string, number> = {};
     monthlyData.forEach((d: any) => {
@@ -208,6 +219,31 @@ export default function InteractiveDashboard() {
     });
     return stats;
   }, [monthlyData, categories, indicators]);
+
+  const monthlyChartData = useMemo(() => {
+    const data: Record<number, Record<string, number>> = {};
+    displayMonths.forEach((m) => {
+      data[m] = {};
+      categories.forEach((c: any) => {
+        data[m][c.name] = 0;
+      });
+    });
+
+    monthlyData.forEach((d: any) => {
+      const catName = categories.find((c: any) => {
+        const ind = indicators.find((i: any) => i.id === d.indicatorId);
+        return ind && ind.categoryId === c.id;
+      })?.name;
+      if (catName && data[d.month]) {
+        data[d.month][catName] = (data[d.month][catName] || 0) + parseFloat(d.value || "0");
+      }
+    });
+
+    return displayMonths.map((m) => ({
+      month: MONTHS[m - 1].slice(0, 3),
+      ...data[m],
+    }));
+  }, [monthlyData, categories, indicators, displayMonths]);
 
   const chartData = useMemo(() => {
     return Object.entries(summaryStats).map(([name, value]) => ({
@@ -291,20 +327,34 @@ export default function InteractiveDashboard() {
             </Select>
           </div>
           <div>
-            <Label>Quarter</Label>
-            <Select value={selectedQuarter.toString()} onValueChange={(v) => setSelectedQuarter(parseInt(v))}>
+            <Label>View Mode</Label>
+            <Select value={viewMode} onValueChange={(v: any) => setViewMode(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((q) => (
-                  <SelectItem key={q} value={q.toString()}>
-                    Q{q}
-                  </SelectItem>
-                ))}
+                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {viewMode === "quarterly" && (
+            <div>
+              <Label>Quarter</Label>
+              <Select value={selectedQuarter.toString()} onValueChange={(v) => setSelectedQuarter(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4].map((q) => (
+                    <SelectItem key={q} value={q.toString()}>
+                      Q{q}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
@@ -354,50 +404,110 @@ export default function InteractiveDashboard() {
               </Card>
             </div>
 
+            {/* Chart Type Selector */}
+            <div className="flex gap-2 flex-wrap">
+              {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
+                <Button
+                  key={type}
+                  variant={chartType === type ? "default" : "outline"}
+                  onClick={() => setChartType(type)}
+                  className="capitalize"
+                >
+                  {type} Chart
+                </Button>
+              ))}
+            </div>
+
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {chartData.length > 0 && (
                 <>
+                  {/* Category Summary Chart */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Category Breakdown (Bar Chart)</CardTitle>
+                      <CardTitle>Category Summary ({chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="#3B82F6" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {chartType === "bar" && (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#3B82F6" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                      {chartType === "pie" && (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={chartData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, value }) => `${name}: ${value}`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {chartData.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
+                      {chartType === "line" && (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={monthlyChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            {categories.map((c: any, i: number) => (
+                              <Line key={c.id} type="monotone" dataKey={c.name} stroke={COLORS[i % COLORS.length]} />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                      {chartType === "area" && (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <AreaChart data={monthlyChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            {categories.map((c: any, i: number) => (
+                              <Area key={c.id} type="monotone" dataKey={c.name} fill={COLORS[i % COLORS.length]} stroke={COLORS[i % COLORS.length]} />
+                            ))}
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
                     </CardContent>
                   </Card>
 
+                  {/* Monthly Trend */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Category Distribution (Pie Chart)</CardTitle>
+                      <CardTitle>Monthly Trend</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, value }) => `${name}: ${value}`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {chartData.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
+                        <LineChart data={monthlyChartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
                           <Tooltip />
-                        </PieChart>
+                          <Legend />
+                          {categories.map((c: any, i: number) => (
+                            <Line key={c.id} type="monotone" dataKey={c.name} stroke={COLORS[i % COLORS.length]} />
+                          ))}
+                        </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
@@ -437,7 +547,7 @@ export default function InteractiveDashboard() {
                               <div key={ind.id} className="border rounded-lg p-4 space-y-3">
                                 <h4 className="font-semibold">{ind.name}</h4>
                                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                                  {quarterMonths.map((month) => (
+                                  {displayMonths.map((month) => (
                                     <div key={month} className="space-y-1">
                                       <label className="text-xs text-gray-600">{MONTHS[month - 1].slice(0, 3)}</label>
                                       <Input
