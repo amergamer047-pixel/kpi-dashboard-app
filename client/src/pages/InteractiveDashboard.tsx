@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -11,7 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -77,73 +77,67 @@ export default function InteractiveDashboard() {
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({
     onSuccess: () => {
-      toast.success("Department created!");
       refetchDepts();
+      toast.success("Department created");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const deleteDeptMutation = trpc.departments.delete.useMutation({
     onSuccess: () => {
-      toast.success("Department deleted!");
       refetchDepts();
+      setSelectedDepartmentId(null);
+      toast.success("Department deleted");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const createCatMutation = trpc.categories.create.useMutation({
     onSuccess: () => {
-      toast.success("Category created!");
       refetchCats();
+      toast.success("Category created");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const deleteCatMutation = trpc.categories.delete.useMutation({
     onSuccess: () => {
-      toast.success("Category deleted!");
       refetchCats();
+      toast.success("Category deleted");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const createIndMutation = trpc.indicators.create.useMutation({
     onSuccess: () => {
-      toast.success("Indicator created!");
       refetchInds();
+      toast.success("Indicator created");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const deleteIndMutation = trpc.indicators.delete.useMutation({
     onSuccess: () => {
-      toast.success("Indicator deleted!");
       refetchInds();
+      toast.success("Indicator deleted");
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const upsertDataMutation = trpc.monthlyData.upsert.useMutation({
     onSuccess: () => {
-      toast.success("Data saved!");
       refetchMonthly();
+      toast.success("Data saved");
     },
-    onError: (err) => toast.error(err.message),
   });
 
-  // Form handlers
+  // Handlers
   const handleAddDepartment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("deptName") as string;
     const color = formData.get("deptColor") as string;
 
-    if (!name.trim()) {
-      toast.error("Department name is required");
+    if (!name || !color) {
+      toast.error("Name and color are required");
       return;
     }
 
-    createDeptMutation.mutate({ name, color: color || "#3B82F6" });
+    createDeptMutation.mutate({ name, color });
     e.currentTarget.reset();
   };
 
@@ -151,14 +145,14 @@ export default function InteractiveDashboard() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("catName") as string;
-    const requiresPatientInfo = (formData.get("requiresPatient") as string) === "on" ? 1 : 0;
+    const requiresPatient = (formData.get("requiresPatient") as string) === "on" ? 1 : 0;
 
-    if (!name.trim()) {
+    if (!name) {
       toast.error("Category name is required");
       return;
     }
 
-    createCatMutation.mutate({ name, requiresPatientInfo: requiresPatientInfo === 1 });
+    createCatMutation.mutate({ name, requiresPatientInfo: requiresPatient as any });
     e.currentTarget.reset();
   };
 
@@ -167,27 +161,21 @@ export default function InteractiveDashboard() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("indName") as string;
     const categoryId = parseInt(formData.get("categoryId") as string);
-    const unit = (formData.get("unit") as string) || "cases";
-    const requiresPatientInfo = (formData.get("requiresPatient") as string) === "on" ? 1 : 0;
+    const unit = formData.get("unit") as string;
 
-    if (!name.trim() || !categoryId) {
-      toast.error("Indicator name and category are required");
+    if (!name || !categoryId) {
+      toast.error("Name and category are required");
       return;
     }
 
-    createIndMutation.mutate({ name, categoryId, unit, requiresPatientInfo: requiresPatientInfo === 1 });
+    createIndMutation.mutate({ name, categoryId, unit: unit || "cases" });
     e.currentTarget.reset();
   };
 
   const handleSaveValue = (indicatorId: number, month: number, value: string) => {
-    if (!selectedDepartmentId) {
-      toast.error("Please select a department");
-      return;
-    }
-
     const numValue = parseFloat(value) || 0;
     upsertDataMutation.mutate({
-      departmentId: selectedDepartmentId,
+      departmentId: selectedDepartmentId!,
       indicatorId,
       year: selectedYear,
       month,
@@ -252,53 +240,43 @@ export default function InteractiveDashboard() {
     }));
   }, [summaryStats]);
 
-  if (!selectedDepartmentId && departments.length > 0) {
-    setSelectedDepartmentId(departments[0].id);
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <h1 className="text-3xl font-bold">Healthcare KPI Dashboard</h1>
-          <div className="flex gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus size={18} /> Add Department
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus size={18} /> Add Department
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Department</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddDepartment} className="space-y-4">
+                <div>
+                  <Label htmlFor="deptName">Department Name</Label>
+                  <Input id="deptName" name="deptName" placeholder="e.g., Male Ward" required />
+                </div>
+                <div>
+                  <Label htmlFor="deptColor">Color</Label>
+                  <Input id="deptColor" name="deptColor" type="color" required />
+                </div>
+                <Button type="submit" className="w-full">
+                  Create Department
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Department</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleAddDepartment} className="space-y-4">
-                  <div>
-                    <Label htmlFor="deptName">Department Name</Label>
-                    <Input id="deptName" name="deptName" placeholder="e.g., Male Ward" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="deptColor">Color</Label>
-                    <Input id="deptColor" name="deptColor" type="color" defaultValue="#3B82F6" />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Create Department
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* Department & Quarter Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div>
             <Label>Department</Label>
-            <Select
-              value={selectedDepartmentId?.toString() || ""}
-              onValueChange={(v) => setSelectedDepartmentId(parseInt(v))}
-            >
+            <Select value={selectedDepartmentId?.toString() || ""} onValueChange={(v) => setSelectedDepartmentId(parseInt(v))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
@@ -311,6 +289,7 @@ export default function InteractiveDashboard() {
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label>Year</Label>
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
@@ -326,6 +305,7 @@ export default function InteractiveDashboard() {
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label>View Mode</Label>
             <Select value={viewMode} onValueChange={(v: any) => setViewMode(v)}>
@@ -357,7 +337,8 @@ export default function InteractiveDashboard() {
           )}
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        {/* Tabs */}
+        <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="data">Data Entry</TabsTrigger>
@@ -367,39 +348,37 @@ export default function InteractiveDashboard() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Departments</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{departments.length}</div>
+                  <div className="text-3xl font-bold">{departments.length}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Categories</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{categories.length}</div>
+                  <div className="text-3xl font-bold">{categories.length}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Indicators</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Indicators</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{indicators.length}</div>
+                  <div className="text-3xl font-bold">{indicators.length}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Cases (Q{selectedQuarter})</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Cases ({viewMode === "quarterly" ? `Q${selectedQuarter}` : "Year"})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {Object.values(summaryStats).reduce((a: number, b: number) => a + b, 0)}
-                  </div>
+                  <div className="text-3xl font-bold">{Object.values(summaryStats).reduce((a, b) => a + b, 0)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -513,13 +492,14 @@ export default function InteractiveDashboard() {
                   </Card>
                 </>
               )}
+              {chartData.length === 0 && (
+                <Card className="lg:col-span-2">
+                  <CardContent className="pt-6 text-center text-gray-500">
+                    No data to display. Add values in the Data Entry tab.
+                  </CardContent>
+                </Card>
+              )}
             </div>
-
-            {chartData.length === 0 && (
-              <Card className="text-center py-8">
-                <p className="text-gray-500">No data to display. Add values in the Data Entry tab.</p>
-              </Card>
-            )}
           </TabsContent>
 
           {/* Data Entry Tab */}
@@ -538,11 +518,12 @@ export default function InteractiveDashboard() {
                           .map((ind: any) => {
                             const monthlyValues: Record<number, string> = {};
                             monthlyData.forEach((d: any) => {
-                              if (d.indicatorId === ind.id) {
+                              if (d.indicatorId === ind.id && !d.hospitalId) {
                                 monthlyValues[d.month] = d.value || "0";
                               }
                             });
 
+                            const requiresPatient = (cat.requiresPatientInfo as any) === 1;
                             return (
                               <div key={ind.id} className="border rounded-lg p-4 space-y-3">
                                 <h4 className="font-semibold">{ind.name}</h4>
@@ -561,6 +542,109 @@ export default function InteractiveDashboard() {
                                     </div>
                                   ))}
                                 </div>
+                                {requiresPatient && (
+                                  <div className="mt-4 pt-4 border-t">
+                                    <h5 className="text-sm font-semibold mb-3">Patient Cases</h5>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                                      {monthlyData
+                                        .filter((d: any) => d.indicatorId === ind.id && d.hospitalId)
+                                        .map((d: any, idx: number) => (
+                                          <div key={idx} className="flex gap-2 text-sm p-2 bg-gray-50 rounded justify-between items-center">
+                                            <div className="flex gap-2">
+                                              <span className="font-medium">{MONTHS[d.month - 1].slice(0, 3)}:</span>
+                                              <span className="text-gray-600">ID: {d.hospitalId}</span>
+                                              <span className="text-gray-600">Name: {d.patientName}</span>
+                                            </div>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => {
+                                                // Delete patient case
+                                                upsertDataMutation.mutate({
+                                                  departmentId: selectedDepartmentId!,
+                                                  indicatorId: ind.id,
+                                                  year: selectedYear,
+                                                  month: d.month,
+                                                  value: "0",
+                                                  hospitalId: "",
+                                                  patientName: "",
+                                                });
+                                              }}
+                                            >
+                                              <Trash2 size={14} />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                    </div>
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button size="sm" className="gap-2 w-full">
+                                          <Plus size={14} /> Add Patient Case
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Add Patient Case - {ind.name}</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            const month = parseInt(formData.get("patientMonth") as string);
+                                            const hospitalId = formData.get("hospitalId") as string;
+                                            const patientName = formData.get("patientName") as string;
+
+                                            if (!month || !hospitalId || !patientName) {
+                                              toast.error("All fields are required");
+                                              return;
+                                            }
+
+                                            upsertDataMutation.mutate(
+                                              {
+                                                departmentId: selectedDepartmentId!,
+                                                indicatorId: ind.id,
+                                                year: selectedYear,
+                                                month,
+                                                value: "1",
+                                                hospitalId,
+                                                patientName,
+                                              },
+                                              {
+                                                onSuccess: () => {
+                                                  e.currentTarget.reset();
+                                                },
+                                              }
+                                            );
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <Label htmlFor="patientMonth">Month</Label>
+                                            <select name="patientMonth" required className="w-full border rounded px-3 py-2">
+                                              <option value="">Select month</option>
+                                              {displayMonths.map((m) => (
+                                                <option key={m} value={m}>
+                                                  {MONTHS[m - 1]}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="hospitalId">Hospital ID</Label>
+                                            <Input id="hospitalId" name="hospitalId" placeholder="e.g., PT-2026-001" required />
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="patientName">Patient Name</Label>
+                                            <Input id="patientName" name="patientName" placeholder="e.g., John Doe" required />
+                                          </div>
+                                          <Button type="submit" className="w-full">
+                                            Add Patient Case
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -569,6 +653,13 @@ export default function InteractiveDashboard() {
                   </Card>
                 ))}
               </div>
+            )}
+            {!selectedDepartmentId && (
+              <Card>
+                <CardContent className="pt-6 text-center text-gray-500">
+                  Please select a department to enter data.
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
@@ -598,10 +689,11 @@ export default function InteractiveDashboard() {
                           id="requiresPatient"
                           name="requiresPatient"
                           type="checkbox"
-                          className="w-4 h-4"
-                          defaultChecked={false}
+                          className="rounded"
                         />
-                        <Label htmlFor="requiresPatient">Requires Patient Tracking</Label>
+                        <Label htmlFor="requiresPatient" className="mb-0">
+                          Requires Patient Tracking
+                        </Label>
                       </div>
                       <Button type="submit" className="w-full">
                         Create Category
@@ -615,13 +707,19 @@ export default function InteractiveDashboard() {
                   {categories.map((cat: any) => (
                     <div key={cat.id} className="flex items-center justify-between p-3 border rounded">
                       <div>
-                        <p className="font-medium">{cat.name}</p>
-                        {cat.requiresPatientInfo && <p className="text-xs text-gray-500">Requires patient tracking</p>}
+                        <h4 className="font-semibold">{cat.name}</h4>
+                        {cat.requiresPatientInfo === 1 && (
+                          <p className="text-sm text-gray-600">Patient tracking enabled</p>
+                        )}
                       </div>
                       <Button
-                        variant="ghost"
                         size="sm"
-                        onClick={() => deleteCatMutation.mutate({ id: cat.id })}
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Delete this category?")) {
+                            deleteCatMutation.mutate({ id: cat.id });
+                          }
+                        }}
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -652,32 +750,18 @@ export default function InteractiveDashboard() {
                       </div>
                       <div>
                         <Label htmlFor="categoryId">Category</Label>
-                        <Select name="categoryId" required>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((c: any) => (
-                              <SelectItem key={c.id} value={c.id.toString()}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <select name="categoryId" required className="w-full border rounded px-3 py-2">
+                          <option value="">Select category</option>
+                          {categories.map((cat: any) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <Label htmlFor="unit">Unit</Label>
-                        <Input id="unit" name="unit" placeholder="e.g., cases" defaultValue="cases" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="requiresPatient"
-                          name="requiresPatient"
-                          type="checkbox"
-                          className="w-4 h-4"
-                          defaultChecked={false}
-                        />
-                        <Label htmlFor="requiresPatient">Requires Patient Tracking</Label>
+                        <Input id="unit" name="unit" placeholder="e.g., cases" />
                       </div>
                       <Button type="submit" className="w-full">
                         Create Indicator
@@ -693,15 +777,19 @@ export default function InteractiveDashboard() {
                     return (
                       <div key={ind.id} className="flex items-center justify-between p-3 border rounded">
                         <div>
-                          <p className="font-medium">{ind.name}</p>
-                          <p className="text-xs text-gray-500">
+                          <h4 className="font-semibold">{ind.name}</h4>
+                          <p className="text-sm text-gray-600">
                             {cat?.name} • {ind.unit}
                           </p>
                         </div>
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onClick={() => deleteIndMutation.mutate({ id: ind.id })}
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm("Delete this indicator?")) {
+                              deleteIndMutation.mutate({ id: ind.id });
+                            }
+                          }}
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -714,7 +802,7 @@ export default function InteractiveDashboard() {
 
             {/* Departments Section */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Departments</CardTitle>
               </CardHeader>
               <CardContent>
@@ -724,14 +812,18 @@ export default function InteractiveDashboard() {
                       <div className="flex items-center gap-3">
                         <div
                           className="w-4 h-4 rounded"
-                          style={{ backgroundColor: dept.color || "#3B82F6" }}
+                          style={{ backgroundColor: dept.color }}
                         />
-                        <p className="font-medium">{dept.name}</p>
+                        <h4 className="font-semibold">{dept.name}</h4>
                       </div>
                       <Button
-                        variant="ghost"
                         size="sm"
-                        onClick={() => deleteDeptMutation.mutate({ id: dept.id })}
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Delete this department?")) {
+                            deleteDeptMutation.mutate({ id: dept.id });
+                          }
+                        }}
                       >
                         <Trash2 size={16} />
                       </Button>

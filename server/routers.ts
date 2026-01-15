@@ -143,9 +143,23 @@ export const appRouter = router({
         month: z.number(),
         value: z.string(),
         notes: z.string().optional(),
+        hospitalId: z.string().optional(),
+        patientName: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return upsertMonthlyKpiData({ ...input, userId: ctx.user.id });
+        const { hospitalId, patientName, ...monthlyInput } = input;
+        if (hospitalId && patientName) {
+          await createPatientCase({
+            userId: ctx.user.id,
+            departmentId: input.departmentId,
+            indicatorId: input.indicatorId,
+            year: input.year,
+            month: input.month,
+            hospitalId,
+            patientName,
+          });
+        }
+        return upsertMonthlyKpiData({ ...monthlyInput, userId: ctx.user.id });
       }),
     
     bulkUpsert: protectedProcedure
