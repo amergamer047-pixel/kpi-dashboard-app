@@ -93,3 +93,38 @@
 - [x] Yearly summary view implemented
 - [x] Dynamic multi-chart visualization (Bar, Pie, Line, Area)
 - [x] All 26 backend tests passing
+
+
+## Layout & Styling Enhancements
+- [ ] Improve dashboard layout and visual design
+- [ ] Add footer with copyright © Thuraiya Almutaani
+- [ ] Enhance color scheme and typography
+- [ ] Improve spacing and visual hierarchy
+- [ ] Ensure responsive design maintained
+
+## Advanced Department Creation Wizard
+- [ ] Create multi-step wizard for department creation
+- [ ] Step 1: Department name and color selection
+- [ ] Step 2: Add custom categories with patient tracking toggle
+- [ ] Step 3: Add indicators/KPIs for each category
+- [ ] Step 4: Review and create department with all settings
+- [ ] Allow adding multiple categories and indicators in one flow
+- [ ] Preserve all functionality while improving UX
+
+
+## Layout & Styling Enhancements - COMPLETE
+- [x] Improved dashboard layout with better visual hierarchy
+- [x] Added footer with copyright © Thuraiya Almutaani
+- [x] Enhanced color scheme and typography
+- [x] Improved spacing and visual hierarchy
+- [x] Responsive design maintained across all devices
+
+## Advanced Department Creation Wizard - COMPLETE
+- [x] Created multi-step wizard for department creation
+- [x] Step 1: Department name and color selection
+- [x] Step 2: Add custom categories with patient tracking toggle
+- [x] Step 3: Add indicators/KPIs for each category
+- [x] Step 4: Review and create department with all settings
+- [x] Allow adding multiple categories and indicators in one flow
+- [x] All functionality preserved and working
+- [x] All 26 backend tests passing

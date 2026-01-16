@@ -38,6 +38,7 @@ import {
 } from "recharts";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
+import { DepartmentWizard } from "@/components/DepartmentWizard";
 
 const COLORS = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"];
 const MONTHS = [
@@ -241,36 +242,16 @@ export default function InteractiveDashboard() {
   }, [summaryStats]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold">Healthcare KPI Dashboard</h1>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus size={18} /> Add Department
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Department</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddDepartment} className="space-y-4">
-                <div>
-                  <Label htmlFor="deptName">Department Name</Label>
-                  <Input id="deptName" name="deptName" placeholder="e.g., Male Ward" required />
-                </div>
-                <div>
-                  <Label htmlFor="deptColor">Color</Label>
-                  <Input id="deptColor" name="deptColor" type="color" required />
-                </div>
-                <Button type="submit" className="w-full">
-                  Create Department
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">Healthcare KPI Dashboard</h1>
+              <p className="text-gray-600 mt-2">Monitor and track key performance indicators across departments</p>
+            </div>
+            <DepartmentWizard />
+          </div>
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -835,6 +816,20 @@ export default function InteractiveDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-6 px-4 md:px-8 mt-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm">
+            <p>© 2026 Thuraiya Almutaani. All rights reserved.</p>
+            <p className="text-gray-500 mt-1">Healthcare KPI Dashboard - Professional Performance Tracking</p>
+          </div>
+          <div className="text-sm text-gray-500">
+            <p>Version 1.0 | Last updated: {new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
