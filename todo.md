@@ -128,3 +128,16 @@
 - [x] Allow adding multiple categories and indicators in one flow
 - [x] All functionality preserved and working
 - [x] All 26 backend tests passing
+
+
+## Indicator Comparison Charts - COMPLETE
+- [x] Add category dropdown filter to Overview tab
+- [x] Filter indicators by selected category
+- [x] Implement bar chart comparison for indicators (quarterly view)
+- [x] Implement bar chart comparison for indicators (yearly view)
+- [x] Ensure charts update when data changes in Data Entry
+- [x] Ensure charts update when category filter changes
+- [x] Test data connectivity between all tabs
+- [x] Preserve all existing functionalities
+- [x] Responsive design for charts on all devices
+- [x] All 26 backend tests passing

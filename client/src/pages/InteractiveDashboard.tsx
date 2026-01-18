@@ -65,6 +65,7 @@ export default function InteractiveDashboard() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [viewMode, setViewMode] = useState<"quarterly" | "yearly">("quarterly");
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
@@ -364,18 +365,41 @@ export default function InteractiveDashboard() {
               </Card>
             </div>
 
-            {/* Chart Type Selector */}
-            <div className="flex gap-2 flex-wrap">
-              {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
-                <Button
-                  key={type}
-                  variant={chartType === type ? "default" : "outline"}
-                  onClick={() => setChartType(type)}
-                  className="capitalize"
+            {/* Chart Type Selector & Category Filter */}
+            <div className="flex gap-4 flex-wrap items-center">
+              <div className="flex gap-2 flex-wrap">
+                {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
+                  <Button
+                    key={type}
+                    variant={chartType === type ? "default" : "outline"}
+                    onClick={() => setChartType(type)}
+                    className="capitalize"
+                  >
+                    {type} Chart
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Category Filter */}
+              <div className="flex-1 min-w-[200px]">
+                <Label>Filter by Category</Label>
+                <Select 
+                  value={selectedCategory?.toString() || "all"} 
+                  onValueChange={(v) => setSelectedCategory(v === "all" ? null : parseInt(v))}
                 >
-                  {type} Chart
-                </Button>
-              ))}
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Charts */}
@@ -469,6 +493,46 @@ export default function InteractiveDashboard() {
                           ))}
                         </LineChart>
                       </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Indicator Comparison Chart */}
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle>
+                        Indicator Comparison - {selectedCategory ? categories.find((c: any) => c.id === selectedCategory)?.name : "All Categories"} ({viewMode === "quarterly" ? `Q${selectedQuarter}` : "Year"})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const categoryId = selectedCategory;
+                        const filteredIndicators = categoryId 
+                          ? indicators.filter((ind: any) => ind.categoryId === categoryId)
+                          : indicators;
+                        
+                        const indicatorData = filteredIndicators.map((ind: any) => {
+                          const total = monthlyData
+                            .filter((d: any) => d.indicatorId === ind.id)
+                            .reduce((sum: number, d: any) => sum + parseFloat(d.value || "0"), 0);
+                          return { name: ind.name, value: total };
+                        });
+
+                        if (indicatorData.length === 0) {
+                          return <div className="text-center text-gray-500">No data available</div>;
+                        }
+
+                        return (
+                          <ResponsiveContainer width="100%" height={400}>
+                            <BarChart data={indicatorData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="value" fill="#10B981" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 </>
