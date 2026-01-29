@@ -4,14 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -55,6 +47,7 @@ interface PatientCase {
   caseDate: Date | null;
   notes: string | null;
   month: number;
+  indicatorId: number;
 }
 
 const MONTHS = [
@@ -129,6 +122,9 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
       setPatientForm({ hospitalId: "", patientName: "", notes: "" });
       toast.success("Patient case added");
     },
+    onError: (error) => {
+      toast.error(`Failed to add patient case: ${error.message}`);
+    },
   });
 
   const deletePatientCase = trpc.patientCases.delete.useMutation({
@@ -157,16 +153,16 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
     const indicator = indicators.find((i: Indicator) => i.id === indicatorId);
     
     // For indicators that require patient info, count patient cases
-    if (indicator?.requiresPatientInfo) {
-      const count = patientCases.filter(
-        (c: PatientCase & { indicatorId: number }) => c.indicatorId === indicatorId && c.month === month
+    if (indicator && indicator.requiresPatientInfo) {
+      const count = (patientCases as any[]).filter(
+        (c: any) => c.indicatorId === indicatorId && c.month === month
       ).length;
       return count.toString();
     }
     
     // For other indicators, get from monthly data
     const data = monthlyData.find(
-      (d: { indicatorId: number; month: number; value: string | null }) => 
+      (d: any) => 
         d.indicatorId === indicatorId && d.month === month
     );
     return data?.value?.toString() || "0";
@@ -233,8 +229,8 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
   // Get patient cases for viewing
   const viewingCases = useMemo(() => {
     if (!viewingIndicator || !viewingMonth) return [];
-    return patientCases.filter(
-      (c: PatientCase & { indicatorId: number }) => 
+    return (patientCases as any[]).filter(
+      (c: any) => 
         c.indicatorId === viewingIndicator.id && c.month === viewingMonth
     );
   }, [patientCases, viewingIndicator, viewingMonth]);
@@ -257,289 +253,296 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
   }, [categories]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3 md:pb-4">
-        <div className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
-          <CardTitle className="text-base md:text-lg">{departmentName} - KPI Data Entry</CardTitle>
-          <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs md:text-sm">Year:</Label>
-              <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
-                <SelectTrigger className="w-20 md:w-24 text-xs md:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs md:text-sm">Quarter:</Label>
-              <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
-                <SelectTrigger className="w-28 md:w-36 text-xs md:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUARTERS.map((q) => (
-                    <SelectItem key={q.value} value={q.value.toString()}>
-                      {q.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[250px] font-semibold">KPI Indicator</TableHead>
-                {quarterMonths.map((month) => (
-                  <TableHead key={month} className="text-center font-semibold w-[100px]">
-                    {MONTHS.find((m) => m.value === month)?.short}
-                  </TableHead>
-                ))}
-                <TableHead className="text-center font-semibold w-[100px] bg-primary/10">
-                  Q{quarter} Total
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category: Category) => (
-                <>
-                  {/* Category Header Row */}
-                  <TableRow
-                    key={`cat-${category.id}`}
-                    className="bg-muted/30 cursor-pointer hover:bg-muted/50"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <TableCell colSpan={5} className="font-semibold">
-                      <div className="flex items-center gap-2">
-                        {expandedCategories.has(category.id) ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                        {category.name}
-                        {category.requiresPatientInfo ? (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            (Patient tracking required)
-                          </span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {/* Indicator Rows */}
-                  {expandedCategories.has(category.id) &&
-                    indicatorsByCategory[category.id]?.map((indicator: Indicator) => (
-                      <TableRow key={`ind-${indicator.id}`} className="hover:bg-muted/20">
-                        <TableCell className="pl-8">
-                          <div className="flex items-center gap-2">
-                            <span>{indicator.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({indicator.unit || "cases"})
-                            </span>
-                          </div>
-                        </TableCell>
-                        {quarterMonths.map((month) => {
-                          const isEditing =
-                            editingCell?.indicatorId === indicator.id &&
-                            editingCell?.month === month;
-                          const value = getCellValue(indicator.id, month);
-                          const requiresPatient = indicator.requiresPatientInfo;
-
-                          return (
-                            <TableCell
-                              key={month}
-                              className="text-center p-1"
-                            >
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={cellValue}
-                                  onChange={(e) => setCellValue(e.target.value)}
-                                  onBlur={handleCellSave}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleCellSave();
-                                    if (e.key === "Escape") setEditingCell(null);
-                                  }}
-                                  className="h-8 text-center"
-                                  autoFocus
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center gap-1">
-                                  <button
-                                    onClick={() => handleCellClick(indicator, month)}
-                                    className="w-full h-8 flex items-center justify-center hover:bg-muted rounded transition-colors"
-                                  >
-                                    {value}
-                                    {requiresPatient && (
-                                      <Plus className="h-3 w-3 ml-1 text-muted-foreground" />
-                                    )}
-                                  </button>
-                                  {requiresPatient && parseInt(value) > 0 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleViewCases(indicator, month);
-                                      }}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                        <TableCell className="text-center font-semibold bg-primary/5">
-                          {getQuarterlyTotal(indicator.id)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </>
+    <div className="space-y-6">
+      {/* Header Controls */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">Year:</Label>
+          <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+            <SelectTrigger className="w-24 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                <SelectItem key={y} value={y.toString()}>
+                  {y}
+                </SelectItem>
               ))}
-            </TableBody>
-          </Table>
+            </SelectContent>
+          </Select>
         </div>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">Quarter:</Label>
+          <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
+            <SelectTrigger className="w-36 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {QUARTERS.map((q) => (
+                <SelectItem key={q.value} value={q.value.toString()}>
+                  {q.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-        {/* Add Patient Case Dialog */}
-        <Dialog open={patientDialogOpen} onOpenChange={setPatientDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Add Patient Case - {selectedIndicator?.name}
+      {/* Categories and Indicators */}
+      {categories.map((category: Category) => (
+        <div key={category.id} className="border rounded-lg overflow-hidden">
+          {/* Category Header */}
+          <button
+            onClick={() => toggleCategory(category.id)}
+            className="w-full bg-muted/30 hover:bg-muted/50 px-4 py-3 flex items-center gap-2 font-semibold text-left transition-colors"
+          >
+            {expandedCategories.has(category.id) ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span>{category.name}</span>
+            {category.requiresPatientInfo ? (
+              <span className="text-xs text-muted-foreground ml-2">
+                (Patient tracking required)
+              </span>
+            ) : null}
+          </button>
+
+          {/* Indicators */}
+          {expandedCategories.has(category.id) && (
+            <div className="divide-y">
+              {indicatorsByCategory[category.id]?.map((indicator: Indicator) => {
+                const requiresPatient = !!indicator.requiresPatientInfo;
+                
+                return (
+                  <div key={indicator.id} className="p-4">
+                    {/* Indicator Name */}
+                    <div className="mb-3">
+                      <h4 className="font-medium">
+                        {indicator.name}
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({indicator.unit || "cases"})
+                        </span>
+                      </h4>
+                    </div>
+
+                    {/* Month Grid */}
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mb-3">
+                      {quarterMonths.map((month) => {
+                        const isEditing =
+                          editingCell?.indicatorId === indicator.id &&
+                          editingCell?.month === month;
+                        const value = getCellValue(indicator.id, month);
+                        const monthLabel = MONTHS.find((m) => m.value === month)?.short;
+
+                        return (
+                          <div key={month} className="flex flex-col gap-1">
+                            <label className="text-xs text-muted-foreground font-medium">
+                              {monthLabel}
+                            </label>
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={cellValue}
+                                onChange={(e) => setCellValue(e.target.value)}
+                                onBlur={handleCellSave}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleCellSave();
+                                  if (e.key === "Escape") setEditingCell(null);
+                                }}
+                                className="h-8 text-center text-sm"
+                                autoFocus
+                              />
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleCellClick(indicator, month)}
+                                  className="flex-1 h-8 flex items-center justify-center hover:bg-muted rounded transition-colors border text-sm font-medium"
+                                >
+                                  {value}
+                                  {requiresPatient && (
+                                    <Plus className="h-3 w-3 ml-1 text-muted-foreground" />
+                                  )}
+                                </button>
+                                {requiresPatient && parseInt(value) > 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewCases(indicator, month);
+                                    }}
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {/* Quarterly Total */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-muted-foreground font-medium">
+                          Q{quarter} Total
+                        </label>
+                        <div className="h-8 flex items-center justify-center bg-primary/5 rounded border font-semibold text-sm">
+                          {getQuarterlyTotal(indicator.id)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Patient Cases Section */}
+                    {requiresPatient && (
+                      <div className="mt-3 pt-3 border-t">
+                        <Button
+                          onClick={() => {
+                            setSelectedIndicator(indicator);
+                            setSelectedMonth(null);
+                            setPatientDialogOpen(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Plus className="h-3 w-3 mr-2" />
+                          Add Patient Case
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Add Patient Case Dialog */}
+      <Dialog open={patientDialogOpen} onOpenChange={setPatientDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Add Patient Case - {selectedIndicator?.name}
+              {selectedMonth && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
                   ({MONTHS.find((m) => m.value === selectedMonth)?.label} {year})
                 </span>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="hospitalId">Hospital ID *</Label>
-                <Input
-                  id="hospitalId"
-                  value={patientForm.hospitalId}
-                  onChange={(e) =>
-                    setPatientForm({ ...patientForm, hospitalId: e.target.value })
-                  }
-                  placeholder="Enter patient hospital ID"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="patientName">Patient Name *</Label>
-                <Input
-                  id="patientName"
-                  value={patientForm.patientName}
-                  onChange={(e) =>
-                    setPatientForm({ ...patientForm, patientName: e.target.value })
-                  }
-                  placeholder="Enter patient name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Input
-                  id="notes"
-                  value={patientForm.notes}
-                  onChange={(e) =>
-                    setPatientForm({ ...patientForm, notes: e.target.value })
-                  }
-                  placeholder="Optional notes"
-                />
-              </div>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="hospitalId">Hospital ID *</Label>
+              <Input
+                id="hospitalId"
+                value={patientForm.hospitalId}
+                onChange={(e) =>
+                  setPatientForm({ ...patientForm, hospitalId: e.target.value })
+                }
+                placeholder="e.g., PT-2026-001"
+              />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setPatientDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddPatientCase} disabled={createPatientCase.isPending}>
-                {createPatientCase.isPending ? "Adding..." : "Add Case"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <div className="space-y-2">
+              <Label htmlFor="patientName">Patient Name *</Label>
+              <Input
+                id="patientName"
+                value={patientForm.patientName}
+                onChange={(e) =>
+                  setPatientForm({ ...patientForm, patientName: e.target.value })
+                }
+                placeholder="e.g., John Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Input
+                id="notes"
+                value={patientForm.notes}
+                onChange={(e) =>
+                  setPatientForm({ ...patientForm, notes: e.target.value })
+                }
+                placeholder="Optional notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPatientDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPatientCase} disabled={createPatientCase.isPending}>
+              {createPatientCase.isPending ? "Adding..." : "Add Case"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* View Patient Cases Dialog */}
-        <Dialog open={viewCasesOpen} onOpenChange={setViewCasesOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                Patient Cases - {viewingIndicator?.name}
+      {/* View Patient Cases Dialog */}
+      <Dialog open={viewCasesOpen} onOpenChange={setViewCasesOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Patient Cases - {viewingIndicator?.name}
+              {viewingMonth && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
                   ({MONTHS.find((m) => m.value === viewingMonth)?.label} {year})
                 </span>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              {viewingCases.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No patient cases recorded for this period.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Hospital ID</TableHead>
-                      <TableHead>Patient Name</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {viewingCases.map((c: PatientCase) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-mono">{c.hospitalId}</TableCell>
-                        <TableCell>{c.patientName}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {c.notes || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => deletePatientCase.mutate({ id: c.id })}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
               )}
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setViewCasesOpen(false);
-                  if (viewingIndicator && viewingMonth) {
-                    setSelectedIndicator(viewingIndicator);
-                    setSelectedMonth(viewingMonth);
-                    setPatientDialogOpen(true);
-                  }
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Case
-              </Button>
-              <Button onClick={() => setViewCasesOpen(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {viewingCases.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No patient cases recorded for this period.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {viewingCases.map((c: any) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 border rounded hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-sm">{c.hospitalId}</p>
+                      <p className="text-sm">{c.patientName}</p>
+                      {c.notes && (
+                        <p className="text-xs text-muted-foreground">{c.notes}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive ml-2 flex-shrink-0"
+                      onClick={() => deletePatientCase.mutate({ id: c.id })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setViewCasesOpen(false);
+                if (viewingIndicator && viewingMonth) {
+                  setSelectedIndicator(viewingIndicator);
+                  setSelectedMonth(viewingMonth);
+                  setPatientDialogOpen(true);
+                }
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Case
+            </Button>
+            <Button onClick={() => setViewCasesOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
