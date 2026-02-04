@@ -8,7 +8,7 @@ import {
   getKpiCategories, createKpiCategory, deleteKpiCategory,
   getKpiIndicators, createKpiIndicator, deleteKpiIndicator,
   getMonthlyKpiData, upsertMonthlyKpiData,
-  getPatientCases, getPatientCasesByDepartment, createPatientCase, updatePatientCase, deletePatientCase,
+  getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
   getQuarterlySummary, initializeSystemData
 } from "./db";
 
@@ -183,6 +183,12 @@ export const appRouter = router({
 
   // Patient Case routes
   patientCases: router({
+    listAll: protectedProcedure.query(async ({ ctx }) => {
+      // Get all patient cases for the user with their related data
+      const cases = await getPatientCasesWithDetails(ctx.user.id);
+      return cases;
+    }),
+    
     list: protectedProcedure
       .input(z.object({
         departmentId: z.number(),

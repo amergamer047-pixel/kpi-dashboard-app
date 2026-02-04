@@ -155,3 +155,21 @@
 - [x] Fix month selector in patient case dialog
 - [x] Implement view patient cases functionality
 - [x] Add delete patient cases functionality
+
+
+## Patient Registry Feature - COMPLETE
+- [x] Create Patient Registry page component
+- [x] Display all patient cases in searchable table
+- [x] Add dropdown filters (Department, Indicator, Month, Year)
+- [x] Implement search by Hospital ID and Patient Name
+- [x] Add sorting by columns
+- [x] Show patient case details (Hospital ID, Name, Indicator, Month, Department, Notes)
+- [x] Add export to Excel functionality for patient registry
+- [x] Integrate Patient Registry into dashboard navigation
+- [x] Test filtering and search functionality
+- [x] Added PatientRegistry component with comprehensive filtering
+- [x] Integrated into InteractiveDashboard as new tab
+- [x] All filters working: Department, Indicator, Month, Year
+- [x] Search by Hospital ID and Patient Name functional
+- [x] Table displays all patient case details with sorting
+- [x] Export CSV button implemented

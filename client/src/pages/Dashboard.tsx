@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { DashboardSummary } from "@/components/DashboardSummary";
 import { KpiSpreadsheet } from "@/components/KpiSpreadsheet";
 import { KpiCharts } from "@/components/KpiCharts";
+import { PatientRegistry } from "@/components/PatientRegistry";
 import { DepartmentManager } from "@/components/DepartmentManager";
 import { ExcelExport } from "@/components/ExcelExport";
 import SettingsPage from "@/pages/SettingsPage";
@@ -21,6 +22,7 @@ import {
   LayoutDashboard,
   Table2,
   BarChart3,
+  Users,
   FileSpreadsheet,
   LogOut,
   Menu,
@@ -114,6 +116,7 @@ export default function Dashboard() {
     { icon: LayoutDashboard, label: "Overview", value: "overview" },
     { icon: Table2, label: "KPI Data", value: "data" },
     { icon: BarChart3, label: "Charts", value: "charts" },
+    { icon: Users, label: "Patient Registry", value: "registry" },
     { icon: Settings, label: "Settings", value: "settings" },
   ];
 
@@ -226,6 +229,7 @@ export default function Dashboard() {
                 {activeTab === "overview" && "Dashboard"}
                 {activeTab === "data" && "KPI Data"}
                 {activeTab === "charts" && "Analytics"}
+                {activeTab === "registry" && "Patient Registry"}
                 {activeTab === "settings" && "Settings"}
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground truncate">
@@ -253,6 +257,10 @@ export default function Dashboard() {
               <DashboardSummary />
               <KpiCharts departmentId={selectedDepartmentId || undefined} />
             </div>
+          )}
+
+          {activeTab === "registry" && (
+            <PatientRegistry />
           )}
 
           {activeTab === "data" && (

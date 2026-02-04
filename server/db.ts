@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -403,4 +403,35 @@ export async function initializeSystemData() {
   for (const ind of indicatorData) {
     await db.insert(kpiIndicators).values(ind);
   }
+}
+
+
+// Get all patient cases with related data (for Patient Registry)
+export async function getPatientCasesWithDetails(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const cases = await db.select({
+    id: patientCases.id,
+    hospitalId: patientCases.hospitalId,
+    patientName: patientCases.patientName,
+    indicatorId: patientCases.indicatorId,
+    indicatorName: kpiIndicators.name,
+    categoryId: kpiCategories.id,
+    categoryName: kpiCategories.name,
+    departmentId: patientCases.departmentId,
+    departmentName: departments.name,
+    month: patientCases.month,
+    year: patientCases.year,
+    notes: patientCases.notes,
+    createdAt: patientCases.createdAt,
+  })
+  .from(patientCases)
+  .innerJoin(kpiIndicators, eq(patientCases.indicatorId, kpiIndicators.id))
+  .innerJoin(kpiCategories, eq(kpiIndicators.categoryId, kpiCategories.id))
+  .innerJoin(departments, eq(patientCases.departmentId, departments.id))
+  .where(eq(patientCases.userId, userId))
+  .orderBy(desc(patientCases.createdAt));
+  
+  return cases;
 }

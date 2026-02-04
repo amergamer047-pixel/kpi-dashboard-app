@@ -39,6 +39,7 @@ import {
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { DepartmentWizard } from "@/components/DepartmentWizard";
+import { PatientRegistry } from "@/components/PatientRegistry";
 
 const COLORS = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"];
 const MONTHS = [
@@ -321,9 +322,10 @@ export default function InteractiveDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="data">Data Entry</TabsTrigger>
+            <TabsTrigger value="registry">Patient Registry</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -706,6 +708,11 @@ export default function InteractiveDashboard() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Patient Registry Tab */}
+          <TabsContent value="registry" className="space-y-6">
+            <PatientRegistry />
           </TabsContent>
 
           {/* Settings Tab */}
