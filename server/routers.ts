@@ -5,8 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
   getDepartments, createDepartment, updateDepartment, deleteDepartment,
-  getKpiCategories, createKpiCategory, deleteKpiCategory,
-  getKpiIndicators, createKpiIndicator, deleteKpiIndicator,
+  getKpiCategories, createKpiCategory, updateKpiCategory, deleteKpiCategory,
+  getKpiIndicators, createKpiIndicator, updateKpiIndicator, deleteKpiIndicator,
   getMonthlyKpiData, upsertMonthlyKpiData,
   getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
   getQuarterlySummary, initializeSystemData
@@ -81,6 +81,21 @@ export const appRouter = router({
         });
       }),
     
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+        requiresPatientInfo: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        return updateKpiCategory(id, ctx.user.id, {
+          ...data,
+          requiresPatientInfo: data.requiresPatientInfo ? 1 : 0,
+        });
+      }),
+    
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -113,6 +128,24 @@ export const appRouter = router({
           userId: ctx.user.id, 
           isSystemIndicator: 0,
           requiresPatientInfo: input.requiresPatientInfo ? 1 : 0,
+        });
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        categoryId: z.number().optional(),
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+        unit: z.string().optional(),
+        targetValue: z.string().optional(),
+        requiresPatientInfo: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        return updateKpiIndicator(id, ctx.user.id, {
+          ...data,
+          requiresPatientInfo: data.requiresPatientInfo ? 1 : 0,
         });
       }),
     

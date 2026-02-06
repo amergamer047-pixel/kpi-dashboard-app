@@ -116,6 +116,17 @@ export default function SettingsPage() {
     onError: (err) => toast.error("Failed to create category"),
   });
 
+  const updateCat = trpc.categories.update.useMutation({
+    onSuccess: () => {
+      utils.categories.list.invalidate();
+      setShowCatDialog(false);
+      setEditingCat(null);
+      setCatForm({ name: "", requiresPatientInfo: false });
+      toast.success("Category updated successfully");
+    },
+    onError: (err) => toast.error("Failed to update category"),
+  });
+
   const deleteCat = trpc.categories.delete.useMutation({
     onSuccess: () => {
       utils.categories.list.invalidate();
@@ -131,15 +142,33 @@ export default function SettingsPage() {
       toast.error("Category name is required");
       return;
     }
-    createCat.mutate({
-      name: catForm.name,
-      requiresPatientInfo: catForm.requiresPatientInfo,
+    if (editingCat) {
+      updateCat.mutate({
+        id: editingCat.id,
+        name: catForm.name,
+        requiresPatientInfo: catForm.requiresPatientInfo,
+      });
+    } else {
+      createCat.mutate({
+        name: catForm.name,
+        requiresPatientInfo: catForm.requiresPatientInfo,
+      });
+    }
+  };
+
+  const handleCatEdit = (cat: any) => {
+    setEditingCat(cat);
+    setCatForm({
+      name: cat.name,
+      requiresPatientInfo: cat.requiresPatientInfo === 1,
     });
+    setShowCatDialog(true);
   };
 
   // ===== INDICATORS =====
   const { data: indicators = [], isLoading: indLoading } = trpc.indicators.list.useQuery();
   const [showIndDialog, setShowIndDialog] = useState(false);
+  const [editingInd, setEditingInd] = useState<any>(null);
   const [indForm, setIndForm] = useState({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
   const [indToDelete, setIndToDelete] = useState<number | null>(null);
 
@@ -151,6 +180,16 @@ export default function SettingsPage() {
       toast.success("Indicator created successfully");
     },
     onError: (err) => toast.error("Failed to create indicator"),
+  });
+
+  const updateInd = trpc.indicators.update.useMutation({
+    onSuccess: () => {
+      utils.indicators.list.invalidate();
+      setShowIndDialog(false);
+      setIndForm({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
+      toast.success("Indicator updated successfully");
+    },
+    onError: (err) => toast.error("Failed to update indicator"),
   });
 
   const deleteInd = trpc.indicators.delete.useMutation({
@@ -171,12 +210,33 @@ export default function SettingsPage() {
       toast.error("Please select a category");
       return;
     }
-    createInd.mutate({
-      categoryId: indForm.categoryId,
-      name: indForm.name,
-      unit: indForm.unit || "cases",
-      requiresPatientInfo: indForm.requiresPatientInfo,
+    if (editingInd) {
+      updateInd.mutate({
+        id: editingInd.id,
+        categoryId: indForm.categoryId,
+        name: indForm.name,
+        unit: indForm.unit || "cases",
+        requiresPatientInfo: indForm.requiresPatientInfo,
+      });
+    } else {
+      createInd.mutate({
+        categoryId: indForm.categoryId,
+        name: indForm.name,
+        unit: indForm.unit || "cases",
+        requiresPatientInfo: indForm.requiresPatientInfo,
+      });
+    }
+  };
+
+  const handleIndEdit = (ind: any) => {
+    setEditingInd(ind);
+    setIndForm({
+      name: ind.name,
+      categoryId: ind.categoryId,
+      unit: ind.unit || "cases",
+      requiresPatientInfo: ind.requiresPatientInfo === 1,
     });
+    setShowIndDialog(true);
   };
 
   return (
@@ -317,6 +377,13 @@ export default function SettingsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => handleCatEdit(cat)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="text-destructive"
                                 onClick={() => setCatToDelete(cat.id)}
                               >
@@ -340,6 +407,7 @@ export default function SettingsPage() {
                 <CardTitle>Manage Indicators</CardTitle>
                 <Button
                   onClick={() => {
+                    setEditingInd(null);
                     setIndForm({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
                     setShowIndDialog(true);
                   }}
@@ -389,14 +457,23 @@ export default function SettingsPage() {
                                 )}
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive"
-                              onClick={() => setIndToDelete(ind.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleIndEdit(ind)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                onClick={() => setIndToDelete(ind.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -466,7 +543,7 @@ export default function SettingsPage() {
       <Dialog open={showCatDialog} onOpenChange={setShowCatDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Category</DialogTitle>
+            <DialogTitle>{editingCat ? "Edit Category" : "Create Category"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -498,8 +575,8 @@ export default function SettingsPage() {
             <Button variant="outline" onClick={() => setShowCatDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCatSave} disabled={createCat.isPending}>
-              Create
+            <Button onClick={handleCatSave} disabled={createCat.isPending || updateCat.isPending}>
+              {editingCat ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -509,7 +586,7 @@ export default function SettingsPage() {
       <Dialog open={showIndDialog} onOpenChange={setShowIndDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Indicator</DialogTitle>
+            <DialogTitle>{editingInd ? "Edit Indicator" : "Create Indicator"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -566,8 +643,8 @@ export default function SettingsPage() {
             <Button variant="outline" onClick={() => setShowIndDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleIndSave} disabled={createInd.isPending}>
-              Create
+            <Button onClick={handleIndSave} disabled={createInd.isPending || updateInd.isPending}>
+              {editingInd ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>

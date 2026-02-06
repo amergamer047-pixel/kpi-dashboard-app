@@ -173,3 +173,24 @@
 - [x] Search by Hospital ID and Patient Name functional
 - [x] Table displays all patient case details with sorting
 - [x] Export CSV button implemented
+
+
+## Edit and Delete Functionality - COMPLETE
+- [x] Add edit button for departments with dialog to modify name and color
+- [x] Add delete button for departments with confirmation dialog
+- [x] Add edit button for categories with dialog to modify name
+- [x] Add delete button for categories with confirmation dialog
+- [x] Add edit button for indicators with dialog to modify name and patient tracking toggle
+- [x] Add delete button for indicators with confirmation dialog
+- [x] Implement cascade delete warnings for categories and indicators
+- [x] Backend procedures added for category and indicator updates
+- [x] Frontend buttons rendered with edit and delete icons
+- [x] Edit dialogs updated to show Edit/Create titles
+- [x] All mutations configured for update operations
+- [x] Verify existing create functionality still works
+- [x] Edit buttons visually present in Settings page
+- [x] Delete buttons visually present in Settings page
+- [x] Backend API endpoints tested and working
+- [x] Frontend components properly structured
+- [x] All 26 backend tests passing
+- [x] Edit/delete buttons rendering correctly with pencil and trash icons
