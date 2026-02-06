@@ -217,7 +217,6 @@ export const appRouter = router({
   // Patient Case routes
   patientCases: router({
     listAll: protectedProcedure.query(async ({ ctx }) => {
-      // Get all patient cases for the user with their related data
       const cases = await getPatientCasesWithDetails(ctx.user.id);
       return cases;
     }),
@@ -288,6 +287,52 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         return getQuarterlySummary(ctx.user.id, input.departmentId, input.year, input.quarter);
+      }),
+  }),
+
+  // Users routes (placeholder for now)
+  users: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new Error('Only admins can list users');
+      }
+      return [];
+    }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        role: z.enum(['admin', 'manager', 'viewer']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can create users');
+        }
+        return { id: 0, ...input };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        role: z.enum(['admin', 'manager', 'viewer']).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can update users');
+        }
+        return { id: input.id };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can delete users');
+        }
+        return { success: true };
       }),
   }),
 });
