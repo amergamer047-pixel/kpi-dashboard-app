@@ -96,20 +96,20 @@
 
 
 ## Layout & Styling Enhancements
-- [x] Improve dashboard layout and visual design
-- [x] Add footer with copyright © Thuraiya Almutaani
-- [x] Enhance color scheme and typography
-- [x] Improve spacing and visual hierarchy
-- [x] Ensure responsive design maintained
+- [ ] Improve dashboard layout and visual design
+- [ ] Add footer with copyright © Thuraiya Almutaani
+- [ ] Enhance color scheme and typography
+- [ ] Improve spacing and visual hierarchy
+- [ ] Ensure responsive design maintained
 
 ## Advanced Department Creation Wizard
-- [x] Create multi-step wizard for department creation
-- [x] Step 1: Department name and color selection
-- [x] Step 2: Add custom categories with patient tracking toggle
-- [x] Step 3: Add indicators/KPIs for each category
-- [x] Step 4: Review and create department with all settings
-- [x] Allow adding multiple categories and indicators in one flow
-- [x] Preserve all functionality while improving UX
+- [ ] Create multi-step wizard for department creation
+- [ ] Step 1: Department name and color selection
+- [ ] Step 2: Add custom categories with patient tracking toggle
+- [ ] Step 3: Add indicators/KPIs for each category
+- [ ] Step 4: Review and create department with all settings
+- [ ] Allow adding multiple categories and indicators in one flow
+- [ ] Preserve all functionality while improving UX
 
 
 ## Layout & Styling Enhancements - COMPLETE
@@ -194,52 +194,3 @@
 - [x] Frontend components properly structured
 - [x] All 26 backend tests passing
 - [x] Edit/delete buttons rendering correctly with pencil and trash icons
-
-
-## Comprehensive Edit/Delete for All Entities - COMPLETE
-- [x] Add edit functionality for KPI monthly entries in Data Entry tab
-- [x] Add delete functionality for KPI monthly entries with confirmation
-- [x] Add edit functionality for patient registry records
-- [x] Add delete functionality for patient registry records with confirmation
-- [x] Add inline edit mode for KPI values in spreadsheet
-- [x] Add bulk edit/delete operations for multiple entries
-- [x] Created EditKpiEntryDialog component
-- [x] Created EditPatientCaseDialog component
-- [x] Test edit/delete for KPI entries
-- [x] Test edit/delete for patient registry records
-
-## Chart Styling and Coloring - COMPLETE
-- [x] Create custom color palette for charts
-- [x] Add color picker for chart customization
-- [x] Implement gradient colors for bar charts
-- [x] Add chart animation options
-- [x] Implement custom legend styling
-- [x] Add chart export as image (PNG/SVG)
-- [x] Create dark mode for charts
-- [x] Add chart data labels and tooltips
-- [x] Implement chart responsive sizing
-- [x] Test chart styling on different screen sizes
-- [x] Created ChartCustomizer component with 7 preset palettes
-- [x] Custom color picker for each color in palette
-- [x] Chart export functionality
-- [x] Color preview display
-
-## User Management System - COMPLETE
-- [x] Create users table in database schema
-- [x] Add user roles (Admin, Manager, Viewer)
-- [x] Implement user creation with email and password
-- [x] Add user list page in Settings
-- [x] Implement user edit functionality (name, email, role)
-- [x] Add user deletion with confirmation
-- [x] Implement user activation/deactivation
-- [x] Add user profile page
-- [x] Implement password change functionality
-- [x] Add user activity logging
-- [x] Create user permissions system
-- [x] Test user creation and deletion
-- [x] Test user role-based access control
-- [x] Verify existing features work with user system
-- [x] Created UsersPage component
-- [x] Added users router with CRUD procedures
-- [x] Users tab integrated into dashboard
-- [x] Role-based access control implemented

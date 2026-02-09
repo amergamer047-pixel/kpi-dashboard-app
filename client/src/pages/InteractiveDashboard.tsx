@@ -322,12 +322,11 @@ export default function InteractiveDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="data">Data Entry</TabsTrigger>
             <TabsTrigger value="registry">Patient Registry</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -883,19 +882,6 @@ export default function InteractiveDashboard() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-center py-8">
-                  User management features coming soon.
-                </p>
               </CardContent>
             </Card>
           </TabsContent>
