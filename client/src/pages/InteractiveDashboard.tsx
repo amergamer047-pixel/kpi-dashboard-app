@@ -76,6 +76,7 @@ export default function InteractiveDashboard() {
     { departmentId: selectedDepartmentId || 0, year: selectedYear, quarter: viewMode === "quarterly" ? selectedQuarter : 0 },
     { enabled: !!selectedDepartmentId }
   );
+  const { data: patientCases = [] } = trpc.patientCases.listAll.useQuery();
 
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({
@@ -208,8 +209,22 @@ export default function InteractiveDashboard() {
         stats[catName] = (stats[catName] || 0) + parseFloat(d.value || "0");
       }
     });
+    
+    patientCases.forEach((pc: any) => {
+      const indicator = indicators.find((i: any) => i.id === pc.indicatorId);
+      if (indicator && indicator.requiresPatientInfo && pc.departmentId === selectedDepartmentId) {
+        const catName = categories.find((c: any) => c.id === indicator.categoryId)?.name;
+        if (catName && pc.year === selectedYear) {
+          const isInQuarter = viewMode === "yearly" || (viewMode === "quarterly" && pc.month >= (selectedQuarter - 1) * 3 + 1 && pc.month <= selectedQuarter * 3);
+          if (isInQuarter) {
+            stats[catName] = (stats[catName] || 0) + 1;
+          }
+        }
+      }
+    });
+    
     return stats;
-  }, [monthlyData, categories, indicators]);
+  }, [monthlyData, categories, indicators, patientCases, selectedYear, selectedQuarter, viewMode, selectedDepartmentId]);
 
   const monthlyChartData = useMemo(() => {
     const data: Record<number, Record<string, number>> = {};
@@ -230,11 +245,23 @@ export default function InteractiveDashboard() {
       }
     });
 
+    patientCases.forEach((pc: any) => {
+      if (pc.departmentId === selectedDepartmentId && pc.year === selectedYear && displayMonths.includes(pc.month)) {
+        const indicator = indicators.find((i: any) => i.id === pc.indicatorId);
+        if (indicator && indicator.requiresPatientInfo) {
+          const catName = categories.find((c: any) => c.id === indicator.categoryId)?.name;
+          if (catName && data[pc.month]) {
+            data[pc.month][catName] = (data[pc.month][catName] || 0) + 1;
+          }
+        }
+      }
+    });
+
     return displayMonths.map((m) => ({
       month: MONTHS[m - 1].slice(0, 3),
       ...data[m],
     }));
-  }, [monthlyData, categories, indicators, displayMonths]);
+  }, [monthlyData, categories, indicators, displayMonths, patientCases]);
 
   const chartData = useMemo(() => {
     return Object.entries(summaryStats).map(([name, value]) => ({
