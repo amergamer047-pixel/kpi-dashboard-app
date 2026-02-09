@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown, ChevronRight, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 interface KpiSpreadsheetProps {
@@ -511,14 +511,28 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
                         <p className="text-xs text-muted-foreground">{c.notes}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive ml-2 flex-shrink-0"
-                      onClick={() => deletePatientCase.mutate({ id: c.id })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1 ml-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                        onClick={() => {
+                          toast.info("Edit functionality coming soon");
+                        }}
+                        title="Edit patient case"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => deletePatientCase.mutate({ id: c.id })}
+                        title="Delete patient case"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

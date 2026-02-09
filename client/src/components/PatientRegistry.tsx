@@ -19,7 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Download, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Download, Trash2, ChevronUp, ChevronDown, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 interface PatientCase {
@@ -79,15 +88,33 @@ export function PatientRegistry() {
   const [sortBy, setSortBy] = useState<"hospitalId" | "patientName" | "indicator" | "department" | "month">("month");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Edit/Delete
+  const [editingCase, setEditingCase] = useState<PatientCase | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+
   // Fetch data
   const { data: departments = [] } = trpc.departments.list.useQuery();
   const { data: indicators = [] } = trpc.indicators.list.useQuery();
   const { data: allPatientCases = [] } = trpc.patientCases.listAll.useQuery();
 
+  const updatePatientCase = trpc.patientCases.update.useMutation({
+    onSuccess: () => {
+      trpc.useUtils().patientCases.listAll.invalidate();
+      toast.success("Patient case updated");
+      setShowEditDialog(false);
+      setEditingCase(null);
+    },
+    onError: (error) => {
+      toast.error(`Failed to update: ${error.message}`);
+    },
+  });
+
   const deletePatientCase = trpc.patientCases.delete.useMutation({
     onSuccess: () => {
       trpc.useUtils().patientCases.listAll.invalidate();
       toast.success("Patient case deleted");
+      setShowDeleteConfirm(null);
     },
     onError: (error) => {
       toast.error(`Failed to delete: ${error.message}`);
@@ -420,6 +447,7 @@ export function PatientRegistry() {
                 No patient cases found. Try adjusting your filters.
               </div>
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -463,15 +491,26 @@ export function PatientRegistry() {
                       <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                         {patientCase.notes || "-"}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                          onClick={() => {
+                            setEditingCase(patientCase);
+                            setShowEditDialog(true);
+                          }}
+                          title="Edit patient case"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive"
-                          onClick={() =>
-                            deletePatientCase.mutate({ id: patientCase.id })
-                          }
+                          onClick={() => setShowDeleteConfirm(patientCase.id)}
                           disabled={deletePatientCase.isPending}
+                          title="Delete patient case"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -480,8 +519,94 @@ export function PatientRegistry() {
                   ))}
                 </TableBody>
               </Table>
+              </>
             )}
           </div>
+
+          {/* Edit Dialog */}
+          {editingCase && showEditDialog && (
+            <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+              <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Edit Patient Case</AlertDialogTitle>
+                </AlertDialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="text-sm font-medium">Hospital ID</label>
+                    <Input
+                      value={editingCase.hospitalId}
+                      onChange={(e) => setEditingCase({...editingCase, hospitalId: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Patient Name</label>
+                    <Input
+                      value={editingCase.patientName}
+                      onChange={(e) => setEditingCase({...editingCase, patientName: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Notes (Optional)</label>
+                    <Input
+                      value={editingCase.notes || ""}
+                      onChange={(e) => setEditingCase({...editingCase, notes: e.target.value || null})}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!editingCase.hospitalId.trim() || !editingCase.patientName.trim()) {
+                        toast.error("Please fill in all required fields");
+                        return;
+                      }
+                      updatePatientCase.mutate({
+                        id: editingCase.id,
+                        hospitalId: editingCase.hospitalId,
+                        patientName: editingCase.patientName,
+                        notes: editingCase.notes || undefined,
+                      });
+                    }}
+                    disabled={updatePatientCase.isPending}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={showDeleteConfirm !== null} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Patient Case</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this patient case? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-2 justify-end">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (showDeleteConfirm !== null) {
+                      deletePatientCase.mutate({ id: showDeleteConfirm });
+                    }
+                  }}
+                  disabled={deletePatientCase.isPending}
+                >
+                  Delete
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

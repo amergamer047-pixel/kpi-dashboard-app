@@ -194,3 +194,20 @@
 - [x] Frontend components properly structured
 - [x] All 26 backend tests passing
 - [x] Edit/delete buttons rendering correctly with pencil and trash icons
+
+
+## Current Tasks - Users Removal and Edit/Delete Integration
+- [x] Remove Users tab from InteractiveDashboard navigation
+- [x] Remove UsersPage.tsx component file
+- [x] Remove users router from backend (routers.ts)
+- [x] Optimize mobile layout for tab navigation (2 columns on mobile, 4 on desktop)
+- [x] Integrate EditPatientCaseDialog into Patient Registry table rows
+- [x] Add edit button to each patient case row in Patient Registry
+- [x] Add delete button to each patient case row in Patient Registry
+- [x] Integrate EditKpiEntryDialog into KPI Data Entry component
+- [x] Add edit/delete buttons for monthly KPI entries
+- [x] Verify Settings page edit/delete click handlers are working
+- [ ] Test all edit/delete operations on mobile devices
+- [ ] Test all edit/delete operations on desktop devices
+- [ ] Verify responsive design is optimized for mobile
+- [ ] Test end-to-end workflow with all features
