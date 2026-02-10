@@ -189,18 +189,11 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
     }, 0);
   };
 
-  // Handle cell click
+  // Handle cell click - allow editing numeric value for all indicators
   const handleCellClick = (indicator: Indicator, month: number) => {
-    if (indicator.requiresPatientInfo) {
-      // Open patient case dialog
-      setSelectedIndicator(indicator);
-      setSelectedMonth(month);
-      setPatientDialogOpen(true);
-    } else {
-      // Edit cell directly
-      setEditingCell({ indicatorId: indicator.id, month });
-      setCellValue(getCellValue(indicator.id, month));
-    }
+    // Always allow direct editing of the numeric value
+    setEditingCell({ indicatorId: indicator.id, month });
+    setCellValue(getCellValue(indicator.id, month));
   };
 
   // Handle delete KPI entry
@@ -395,12 +388,9 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => handleCellClick(indicator, month)}
-                                  className="flex-1 h-8 flex items-center justify-center hover:bg-muted rounded transition-colors border text-sm font-medium"
+                                  className="flex-1 h-8 flex items-center justify-center hover:bg-muted rounded transition-colors border text-sm font-medium cursor-pointer"
                                 >
                                   {value}
-                                  {requiresPatient && (
-                                    <Plus className="h-3 w-3 ml-1 text-muted-foreground" />
-                                  )}
                                 </button>
                                 {requiresPatient && parseInt(value) > 0 && (
                                   <Button
@@ -411,8 +401,25 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
                                       e.stopPropagation();
                                       handleViewCases(indicator, month);
                                     }}
+                                    title="View patient cases"
                                   >
                                     <Eye className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                {requiresPatient && parseInt(value) === 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedIndicator(indicator);
+                                      setSelectedMonth(month);
+                                      setPatientDialogOpen(true);
+                                    }}
+                                    title="Add patient case"
+                                  >
+                                    <Plus className="h-3 w-3" />
                                   </Button>
                                 )}
                               </div>
