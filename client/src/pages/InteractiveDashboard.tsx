@@ -40,6 +40,7 @@ import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { DepartmentWizard } from "@/components/DepartmentWizard";
 import { PatientRegistry } from "@/components/PatientRegistry";
+import { UnifiedPatientDataEntry } from "@/components/UnifiedPatientDataEntry";
 
 const COLORS = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"];
 const MONTHS = [
@@ -76,7 +77,10 @@ export default function InteractiveDashboard() {
     { departmentId: selectedDepartmentId || 0, year: selectedYear, quarter: viewMode === "quarterly" ? selectedQuarter : 0 },
     { enabled: !!selectedDepartmentId }
   );
-  const { data: patientCases = [] } = trpc.patientCases.listAll.useQuery();
+  const { data: patientCases = [] } = trpc.patientCases.listByDepartment.useQuery(
+    { departmentId: selectedDepartmentId || 0, year: selectedYear },
+    { enabled: !!selectedDepartmentId }
+  );
 
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({
@@ -576,162 +580,17 @@ export default function InteractiveDashboard() {
             </div>
           </TabsContent>
 
-          {/* Data Entry Tab */}
+          {/* Data Entry Tab - Unified Patient Data Entry */}
           <TabsContent value="data" className="space-y-6">
-            {selectedDepartmentId && (
-              <div className="space-y-6">
-                {categories.map((cat: any) => (
-                  <Card key={cat.id}>
-                    <CardHeader>
-                      <CardTitle>{cat.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {indicators
-                          .filter((ind: any) => ind.categoryId === cat.id)
-                          .map((ind: any) => {
-                            const monthlyValues: Record<number, string> = {};
-                            monthlyData.forEach((d: any) => {
-                              if (d.indicatorId === ind.id && !d.hospitalId) {
-                                monthlyValues[d.month] = d.value || "0";
-                              }
-                            });
-
-                            const requiresPatient = (cat.requiresPatientInfo as any) === 1;
-                            return (
-                              <div key={ind.id} className="border rounded-lg p-4 space-y-3">
-                                <h4 className="font-semibold">{ind.name}</h4>
-                                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                                  {displayMonths.map((month) => (
-                                    <div key={month} className="space-y-1">
-                                      <label className="text-xs text-gray-600">{MONTHS[month - 1].slice(0, 3)}</label>
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        value={monthlyValues[month] || ""}
-                                        onChange={(e) => handleSaveValue(ind.id, month, e.target.value)}
-                                        placeholder="0"
-                                        className="text-center"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                                {requiresPatient && (
-                                  <div className="mt-4 pt-4 border-t">
-                                    <h5 className="text-sm font-semibold mb-3">Patient Cases</h5>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
-                                      {monthlyData
-                                        .filter((d: any) => d.indicatorId === ind.id && d.hospitalId)
-                                        .map((d: any, idx: number) => (
-                                          <div key={idx} className="flex gap-2 text-sm p-2 bg-gray-50 rounded justify-between items-center">
-                                            <div className="flex gap-2">
-                                              <span className="font-medium">{MONTHS[d.month - 1].slice(0, 3)}:</span>
-                                              <span className="text-gray-600">ID: {d.hospitalId}</span>
-                                              <span className="text-gray-600">Name: {d.patientName}</span>
-                                            </div>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => {
-                                                // Delete patient case
-                                                upsertDataMutation.mutate({
-                                                  departmentId: selectedDepartmentId!,
-                                                  indicatorId: ind.id,
-                                                  year: selectedYear,
-                                                  month: d.month,
-                                                  value: "0",
-                                                  hospitalId: "",
-                                                  patientName: "",
-                                                });
-                                              }}
-                                            >
-                                              <Trash2 size={14} />
-                                            </Button>
-                                          </div>
-                                        ))}
-                                    </div>
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button size="sm" className="gap-2 w-full">
-                                          <Plus size={14} /> Add Patient Case
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Add Patient Case - {ind.name}</DialogTitle>
-                                        </DialogHeader>
-                                        <form
-                                          onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const formData = new FormData(e.currentTarget);
-                                            const month = parseInt(formData.get("patientMonth") as string);
-                                            const hospitalId = formData.get("hospitalId") as string;
-                                            const patientName = formData.get("patientName") as string;
-
-                                            if (!month || !hospitalId || !patientName) {
-                                              toast.error("All fields are required");
-                                              return;
-                                            }
-
-                                            upsertDataMutation.mutate(
-                                              {
-                                                departmentId: selectedDepartmentId!,
-                                                indicatorId: ind.id,
-                                                year: selectedYear,
-                                                month,
-                                                value: "1",
-                                                hospitalId,
-                                                patientName,
-                                              },
-                                              {
-                                                onSuccess: () => {
-                                                  e.currentTarget.reset();
-                                                },
-                                              }
-                                            );
-                                          }}
-                                          className="space-y-4"
-                                        >
-                                          <div>
-                                            <Label htmlFor="patientMonth">Month</Label>
-                                            <select name="patientMonth" required className="w-full border rounded px-3 py-2">
-                                              <option value="">Select month</option>
-                                              {displayMonths.map((m) => (
-                                                <option key={m} value={m}>
-                                                  {MONTHS[m - 1]}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </div>
-                                          <div>
-                                            <Label htmlFor="hospitalId">Hospital ID</Label>
-                                            <Input id="hospitalId" name="hospitalId" placeholder="e.g., PT-2026-001" required />
-                                          </div>
-                                          <div>
-                                            <Label htmlFor="patientName">Patient Name</Label>
-                                            <Input id="patientName" name="patientName" placeholder="e.g., John Doe" required />
-                                          </div>
-                                          <Button type="submit" className="w-full">
-                                            Add Patient Case
-                                          </Button>
-                                        </form>
-                                      </DialogContent>
-                                    </Dialog>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-            {!selectedDepartmentId && (
+            {selectedDepartmentId ? (
+              <UnifiedPatientDataEntry
+                departmentId={selectedDepartmentId}
+                departmentName={departments.find((d: any) => d.id === selectedDepartmentId)?.name || ""}
+              />
+            ) : (
               <Card>
-                <CardContent className="pt-6 text-center text-gray-500">
-                  Please select a department to enter data.
+                <CardContent className="pt-6">
+                  <p className="text-center text-muted-foreground">Please select a department to begin data entry</p>
                 </CardContent>
               </Card>
             )}
