@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Eye, ChevronDown, ChevronRight, Edit } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface KpiSpreadsheetProps {
@@ -112,6 +112,20 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
       utils.monthlyData.get.invalidate();
       setEditingCell(null);
       setCellValue("");
+      toast.success("KPI value updated");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update KPI: ${error.message}`);
+    },
+  });
+
+  const deleteMonthlyData = trpc.monthlyData.delete.useMutation({
+    onSuccess: () => {
+      utils.monthlyData.get.invalidate();
+      toast.success("KPI entry deleted");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete KPI: ${error.message}`);
     },
   });
 
@@ -186,6 +200,18 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
       // Edit cell directly
       setEditingCell({ indicatorId: indicator.id, month });
       setCellValue(getCellValue(indicator.id, month));
+    }
+  };
+
+  // Handle delete KPI entry
+  const handleDeleteKpiEntry = (indicatorId: number, month: number) => {
+    if (confirm(`Delete KPI entry for ${MONTHS.find(m => m.value === month)?.label}?`)) {
+      deleteMonthlyData.mutate({
+        departmentId,
+        indicatorId,
+        year,
+        month,
+      });
     }
   };
 
@@ -342,18 +368,29 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
                               {monthLabel}
                             </label>
                             {isEditing ? (
-                              <Input
-                                type="number"
-                                value={cellValue}
-                                onChange={(e) => setCellValue(e.target.value)}
-                                onBlur={handleCellSave}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") handleCellSave();
-                                  if (e.key === "Escape") setEditingCell(null);
-                                }}
-                                className="h-8 text-center text-sm"
-                                autoFocus
-                              />
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleCellSave();
+                                    if (e.key === "Escape") setEditingCell(null);
+                                  }}
+                                  className="h-8 text-center text-sm flex-1"
+                                  autoFocus
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => handleDeleteKpiEntry(indicator.id, month)}
+                                  title="Delete entry"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             ) : (
                               <div className="flex items-center gap-1">
                                 <button
@@ -515,19 +552,12 @@ export function KpiSpreadsheet({ departmentId, departmentName }: KpiSpreadsheetP
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-blue-600 hover:text-blue-700"
-                        onClick={() => {
-                          toast.info("Edit functionality coming soon");
-                        }}
-                        title="Edit patient case"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
                         className="h-8 w-8 text-destructive"
-                        onClick={() => deletePatientCase.mutate({ id: c.id })}
+                        onClick={() => {
+                          if (confirm(`Delete patient case ${c.hospitalId}?`)) {
+                            deletePatientCase.mutate({ id: c.id });
+                          }
+                        }}
                         title="Delete patient case"
                       >
                         <Trash2 className="h-4 w-4" />

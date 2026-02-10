@@ -211,3 +211,19 @@
 - [ ] Test all edit/delete operations on desktop devices
 - [ ] Verify responsive design is optimized for mobile
 - [ ] Test end-to-end workflow with all features
+
+
+## Data Entry Edit/Delete Functionality - COMPLETE
+- [x] Add edit button to monthly KPI value cells in spreadsheet
+- [x] Add delete button to monthly KPI value cells in spreadsheet
+- [x] Implement edit dialog for monthly KPI entries (value, month, indicator)
+- [x] Implement delete confirmation dialog for monthly KPI entries
+- [x] Support editing both current month and previous months entries
+- [x] Add backend mutation for updating monthly KPI values
+- [x] Add backend mutation for deleting monthly KPI entries
+- [x] Ensure edit/delete works for all indicators and departments
+- [x] Test edit functionality with various data types (numbers, decimals)
+- [x] Test delete functionality with cascade effects
+- [x] Verify data consistency after edit/delete operations
+- [x] Test all functions on desktop and mobile devices
+- [x] Audit complete data flow for monthly entries

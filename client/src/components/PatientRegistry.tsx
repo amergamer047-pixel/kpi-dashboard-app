@@ -439,7 +439,6 @@ export function PatientRegistry() {
           <div className="text-sm text-muted-foreground">
             Showing <span className="font-semibold">{filteredCases.length}</span> patient case{filteredCases.length !== 1 ? "s" : ""}
           </div>
-
           {/* Table */}
           <div className="overflow-x-auto border rounded-lg">
             {filteredCases.length === 0 ? (

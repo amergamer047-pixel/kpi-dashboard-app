@@ -9,8 +9,10 @@ import {
   getKpiIndicators, createKpiIndicator, updateKpiIndicator, deleteKpiIndicator,
   getMonthlyKpiData, upsertMonthlyKpiData,
   getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
-  getQuarterlySummary, initializeSystemData
+  getQuarterlySummary, initializeSystemData, getDb
 } from "./db";
+import { monthlyKpiData } from "../drizzle/schema";
+import { and, eq } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -211,6 +213,31 @@ export const appRouter = router({
           results.push(result);
         }
         return results;
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({
+        departmentId: z.number(),
+        indicatorId: z.number(),
+        year: z.number(),
+        month: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { departmentId, indicatorId, year, month } = input;
+        const db = await getDb();
+        if (!db) throw new Error("Database connection failed");
+        // Delete the monthly KPI entry
+        await db.delete(monthlyKpiData)
+          .where(
+            and(
+              eq(monthlyKpiData.userId, ctx.user.id),
+              eq(monthlyKpiData.departmentId, departmentId),
+              eq(monthlyKpiData.indicatorId, indicatorId),
+              eq(monthlyKpiData.year, year),
+              eq(monthlyKpiData.month, month)
+            )
+          );
+        return { success: true };
       }),
   }),
 
