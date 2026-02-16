@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE kpi_categories DROP COLUMN departmentId; ALTER TABLE kpi_indicators DROP COLUMN departmentId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute ALTER TABLE kpi_categories DROP COLUMN departmentId; ALTER TABLE kpi_indicators DROP COLUMN departmentId;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2896
+}

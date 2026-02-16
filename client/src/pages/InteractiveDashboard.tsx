@@ -42,7 +42,17 @@ import { DepartmentWizard } from "@/components/DepartmentWizard";
 import { PatientRegistry } from "@/components/PatientRegistry";
 import { UnifiedPatientDataEntry } from "@/components/UnifiedPatientDataEntry";
 
-const COLORS = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"];
+const COLOR_PALETTES = {
+  default: ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"],
+  pastel: ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"],
+  vibrant: ["#FF006E", "#FB5607", "#FFBE0B", "#8338EC", "#3A86FF"],
+  ocean: ["#0077B6", "#00B4D8", "#90E0EF", "#00D9FF", "#0096C7"],
+  sunset: ["#FF6B6B", "#FFA500", "#FFD93D", "#FF8C42", "#FF6B9D"],
+  forest: ["#2D6A4F", "#40916C", "#52B788", "#74C69D", "#95D5B2"],
+  purple: ["#9D4EDD", "#7B2CBF", "#C77DFF", "#E0AAFF", "#5A189A"],
+};
+
+const COLORS = COLOR_PALETTES.default;
 const MONTHS = [
   "January",
   "February",
@@ -59,6 +69,7 @@ const MONTHS = [
 ];
 
 type ChartType = "bar" | "pie" | "line" | "area";
+type ColorPalette = keyof typeof COLOR_PALETTES;
 
 export default function InteractiveDashboard() {
   const currentYear = new Date().getFullYear();
@@ -68,6 +79,8 @@ export default function InteractiveDashboard() {
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [viewMode, setViewMode] = useState<"quarterly" | "yearly">("quarterly");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [colorPalette, setColorPalette] = useState<ColorPalette>("default");
+  const currentColors = COLOR_PALETTES[colorPalette];
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
@@ -398,7 +411,7 @@ export default function InteractiveDashboard() {
               </Card>
             </div>
 
-            {/* Chart Type Selector & Category Filter */}
+            {/* Chart Type Selector & Customization */}
             <div className="flex gap-4 flex-wrap items-center">
               <div className="flex gap-2 flex-wrap">
                 {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
@@ -411,6 +424,25 @@ export default function InteractiveDashboard() {
                     {type} Chart
                   </Button>
                 ))}
+              </div>
+              
+              {/* Color Palette Selector */}
+              <div className="flex-1 min-w-[200px]">
+                <Label>Color Scheme</Label>
+                <Select value={colorPalette} onValueChange={(v) => setColorPalette(v as ColorPalette)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default</SelectItem>
+                    <SelectItem value="pastel">Pastel</SelectItem>
+                    <SelectItem value="vibrant">Vibrant</SelectItem>
+                    <SelectItem value="ocean">Ocean</SelectItem>
+                    <SelectItem value="sunset">Sunset</SelectItem>
+                    <SelectItem value="forest">Forest</SelectItem>
+                    <SelectItem value="purple">Purple</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               {/* Category Filter */}
@@ -452,7 +484,7 @@ export default function InteractiveDashboard() {
                             <XAxis dataKey="name" />
                             <YAxis />
                             <Tooltip />
-                            <Bar dataKey="value" fill="#3B82F6" />
+                            <Bar dataKey="value" fill={currentColors[0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       )}
@@ -470,7 +502,7 @@ export default function InteractiveDashboard() {
                               dataKey="value"
                             >
                               {chartData.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={currentColors[index % currentColors.length]} />
                               ))}
                             </Pie>
                             <Tooltip />
@@ -486,7 +518,7 @@ export default function InteractiveDashboard() {
                             <Tooltip />
                             <Legend />
                             {categories.map((c: any, i: number) => (
-                              <Line key={c.id} type="monotone" dataKey={c.name} stroke={COLORS[i % COLORS.length]} />
+                              <Line key={c.id} type="monotone" dataKey={c.name} stroke={currentColors[i % currentColors.length]} />
                             ))}
                           </LineChart>
                         </ResponsiveContainer>
@@ -500,7 +532,7 @@ export default function InteractiveDashboard() {
                             <Tooltip />
                             <Legend />
                             {categories.map((c: any, i: number) => (
-                              <Area key={c.id} type="monotone" dataKey={c.name} fill={COLORS[i % COLORS.length]} stroke={COLORS[i % COLORS.length]} />
+                              <Area key={c.id} type="monotone" dataKey={c.name} fill={currentColors[i % currentColors.length]} stroke={currentColors[i % currentColors.length]} />
                             ))}
                           </AreaChart>
                         </ResponsiveContainer>
@@ -522,7 +554,7 @@ export default function InteractiveDashboard() {
                           <Tooltip />
                           <Legend />
                           {categories.map((c: any, i: number) => (
-                            <Line key={c.id} type="monotone" dataKey={c.name} stroke={COLORS[i % COLORS.length]} />
+                            <Line key={c.id} type="monotone" dataKey={c.name} stroke={currentColors[i % currentColors.length]} />
                           ))}
                         </LineChart>
                       </ResponsiveContainer>
@@ -544,25 +576,80 @@ export default function InteractiveDashboard() {
                           : indicators;
                         
                         const indicatorData = filteredIndicators.map((ind: any) => {
-                          const total = monthlyData
+                          // Count from monthlyData
+                          const monthlyTotal = monthlyData
                             .filter((d: any) => d.indicatorId === ind.id)
                             .reduce((sum: number, d: any) => sum + parseFloat(d.value || "0"), 0);
-                          return { name: ind.name, value: total };
+                          
+                          // Count from patientCases
+                          const patientTotal = patientCases
+                            .filter((pc: any) => {
+                              if (pc.indicatorId !== ind.id) return false;
+                              if (pc.departmentId !== selectedDepartmentId) return false;
+                              if (pc.year !== selectedYear) return false;
+                              if (viewMode === "quarterly") {
+                                return pc.month >= (selectedQuarter - 1) * 3 + 1 && pc.month <= selectedQuarter * 3;
+                              }
+                              return true;
+                            }).length;
+                          
+                          return { name: ind.name, value: monthlyTotal + patientTotal };
                         });
 
                         if (indicatorData.length === 0) {
                           return <div className="text-center text-gray-500">No data available</div>;
                         }
 
+                        if (chartType === "bar") {
+                          return (
+                            <ResponsiveContainer width="100%" height={400}>
+                              <BarChart data={indicatorData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" fill={currentColors[0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "pie") {
+                          return (
+                            <ResponsiveContainer width="100%" height={400}>
+                              <PieChart>
+                                <Pie data={indicatorData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
+                                  {indicatorData.map((_, i) => (
+                                    <Cell key={`cell-${i}`} fill={currentColors[i % currentColors.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "line") {
+                          return (
+                            <ResponsiveContainer width="100%" height={400}>
+                              <LineChart data={indicatorData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                <YAxis />
+                                <Tooltip />
+                                <Line type="monotone" dataKey="value" stroke={currentColors[0]} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          );
+                        }
                         return (
                           <ResponsiveContainer width="100%" height={400}>
-                            <BarChart data={indicatorData}>
+                            <AreaChart data={indicatorData}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                               <YAxis />
                               <Tooltip />
-                              <Bar dataKey="value" fill="#10B981" />
-                            </BarChart>
+                                <Area type="monotone" dataKey="value" fill={currentColors[0]} stroke={currentColors[0]} />
+                            </AreaChart>
                           </ResponsiveContainer>
                         );
                       })()}

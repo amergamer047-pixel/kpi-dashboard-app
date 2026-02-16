@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ const DEPARTMENT_COLORS = [
 
 export default function SettingsPage() {
   const utils = trpc.useUtils();
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
 
   // ===== DEPARTMENTS =====
   const { data: departments = [], isLoading: deptLoading } = trpc.departments.list.useQuery();
@@ -37,6 +38,13 @@ export default function SettingsPage() {
   const [editingDept, setEditingDept] = useState<any>(null);
   const [deptForm, setDeptForm] = useState({ name: "", description: "", color: "#3B82F6" });
   const [deptToDelete, setDeptToDelete] = useState<number | null>(null);
+
+  // Set first department as selected by default
+  useEffect(() => {
+    if (departments.length > 0 && !selectedDepartmentId) {
+      setSelectedDepartmentId(departments[0].id);
+    }
+  }, [departments, selectedDepartmentId]);
 
   const createDept = trpc.departments.create.useMutation({
     onSuccess: () => {
@@ -100,7 +108,18 @@ export default function SettingsPage() {
   };
 
   // ===== CATEGORIES =====
-  const { data: categories = [], isLoading: catLoading } = trpc.categories.list.useQuery();
+  // Filter categories by selected department
+  const { data: allCategories = [], isLoading: catLoading } = trpc.categories.list.useQuery();
+  const categories = useMemo(() => {
+    if (!selectedDepartmentId) return allCategories;
+    // Filter categories that belong to the selected department or are system categories
+    return allCategories.filter(cat => {
+      // For now, show all categories since we don't have departmentId in schema yet
+      // This will be updated once we add department association
+      return true;
+    });
+  }, [allCategories, selectedDepartmentId]);
+  
   const [showCatDialog, setShowCatDialog] = useState(false);
   const [editingCat, setEditingCat] = useState<any>(null);
   const [catForm, setCatForm] = useState({ name: "", requiresPatientInfo: false });
@@ -152,6 +171,7 @@ export default function SettingsPage() {
       createCat.mutate({
         name: catForm.name,
         requiresPatientInfo: catForm.requiresPatientInfo,
+        // departmentId will be added once schema is updated
       });
     }
   };
@@ -166,7 +186,18 @@ export default function SettingsPage() {
   };
 
   // ===== INDICATORS =====
-  const { data: indicators = [], isLoading: indLoading } = trpc.indicators.list.useQuery();
+  // Filter indicators by selected department
+  const { data: allIndicators = [], isLoading: indLoading } = trpc.indicators.list.useQuery();
+  const indicators = useMemo(() => {
+    if (!selectedDepartmentId) return allIndicators;
+    // Filter indicators that belong to the selected department or are system indicators
+    return allIndicators.filter(ind => {
+      // For now, show all indicators since we don't have departmentId in schema yet
+      // This will be updated once we add department association
+      return true;
+    });
+  }, [allIndicators, selectedDepartmentId]);
+  
   const [showIndDialog, setShowIndDialog] = useState(false);
   const [editingInd, setEditingInd] = useState<any>(null);
   const [indForm, setIndForm] = useState({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
@@ -224,6 +255,7 @@ export default function SettingsPage() {
         name: indForm.name,
         unit: indForm.unit || "cases",
         requiresPatientInfo: indForm.requiresPatientInfo,
+        // departmentId will be added once schema is updated
       });
     }
   };
