@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,17 +42,7 @@ import { DepartmentWizard } from "@/components/DepartmentWizard";
 import { PatientRegistry } from "@/components/PatientRegistry";
 import { UnifiedPatientDataEntry } from "@/components/UnifiedPatientDataEntry";
 
-const COLOR_PALETTES = {
-  default: ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"],
-  pastel: ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"],
-  vibrant: ["#FF006E", "#FB5607", "#FFBE0B", "#8338EC", "#3A86FF"],
-  ocean: ["#0077B6", "#00B4D8", "#90E0EF", "#00D9FF", "#0096C7"],
-  sunset: ["#FF6B6B", "#FFA500", "#FFD93D", "#FF8C42", "#FF6B9D"],
-  forest: ["#2D6A4F", "#40916C", "#52B788", "#74C69D", "#95D5B2"],
-  purple: ["#9D4EDD", "#7B2CBF", "#C77DFF", "#E0AAFF", "#5A189A"],
-};
-
-const COLORS = COLOR_PALETTES.default;
+import { COLOR_PALETTES, getPaletteColors } from "@/lib/colorPalettes";
 const MONTHS = [
   "January",
   "February",
@@ -69,7 +59,6 @@ const MONTHS = [
 ];
 
 type ChartType = "bar" | "pie" | "line" | "area";
-type ColorPalette = keyof typeof COLOR_PALETTES;
 
 export default function InteractiveDashboard() {
   const currentYear = new Date().getFullYear();
@@ -79,8 +68,26 @@ export default function InteractiveDashboard() {
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [viewMode, setViewMode] = useState<"quarterly" | "yearly">("quarterly");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [colorPalette, setColorPalette] = useState<ColorPalette>("default");
-  const currentColors = COLOR_PALETTES[colorPalette];
+  const [colorPalette, setColorPalette] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("kpiDashboardColorPalette") || "corporate";
+    }
+    return "corporate";
+  });
+  const currentColors = getPaletteColors(colorPalette);
+
+  // Listen for color palette changes from Settings page
+  useEffect(() => {
+    const handleColorPaletteChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setColorPalette(customEvent.detail.paletteId);
+    };
+
+    window.addEventListener("colorPaletteChanged", handleColorPaletteChange);
+    return () => {
+      window.removeEventListener("colorPaletteChanged", handleColorPaletteChange);
+    };
+  }, []);
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
@@ -426,24 +433,7 @@ export default function InteractiveDashboard() {
                 ))}
               </div>
               
-              {/* Color Palette Selector */}
-              <div className="flex-1 min-w-[200px]">
-                <Label>Color Scheme</Label>
-                <Select value={colorPalette} onValueChange={(v) => setColorPalette(v as ColorPalette)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Default</SelectItem>
-                    <SelectItem value="pastel">Pastel</SelectItem>
-                    <SelectItem value="vibrant">Vibrant</SelectItem>
-                    <SelectItem value="ocean">Ocean</SelectItem>
-                    <SelectItem value="sunset">Sunset</SelectItem>
-                    <SelectItem value="forest">Forest</SelectItem>
-                    <SelectItem value="purple">Purple</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
               
               {/* Category Filter */}
               <div className="flex-1 min-w-[200px]">

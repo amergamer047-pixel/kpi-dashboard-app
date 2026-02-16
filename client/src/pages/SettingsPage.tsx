@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { ColorPaletteSettings } from "@/components/ColorPaletteSettings";
 
 const DEPARTMENT_COLORS = [
   "#3B82F6", "#22C55E", "#EF4444", "#F59E0B",
@@ -31,6 +32,19 @@ const DEPARTMENT_COLORS = [
 export default function SettingsPage() {
   const utils = trpc.useUtils();
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
+  const [selectedColorPalette, setSelectedColorPalette] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("kpiDashboardColorPalette") || "corporate";
+    }
+    return "corporate";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("kpiDashboardColorPalette", selectedColorPalette);
+    window.dispatchEvent(
+      new CustomEvent("colorPaletteChanged", { detail: { paletteId: selectedColorPalette } })
+    );
+  }, [selectedColorPalette]);
 
   // ===== DEPARTMENTS =====
   const { data: departments = [], isLoading: deptLoading } = trpc.departments.list.useQuery();
@@ -280,10 +294,11 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="departments" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="departments">Departments</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="indicators">Indicators</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
           </TabsList>
 
           {/* DEPARTMENTS TAB */}
@@ -514,6 +529,16 @@ export default function SettingsPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* APPEARANCE TAB */}
+          <TabsContent value="appearance">
+            <div className="space-y-6">
+              <ColorPaletteSettings
+                selectedPalette={selectedColorPalette}
+                onPaletteChange={setSelectedColorPalette}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
