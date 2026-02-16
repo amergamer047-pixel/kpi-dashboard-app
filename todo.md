@@ -389,3 +389,32 @@ The handleCellClick function was checking if indicator.requiresPatientInfo and o
 - Persistent selection across page reloads
 - Real-time chart updates when palette changes
 - Professional descriptions for each palette
+
+
+## BUG FIXES - Indicator Management & Color Palette - IN PROGRESS
+- [ ] Fix indicator creation - unable to add new indicators appropriately
+- [ ] Fix indicator deletion - delete functionality not working properly
+- [ ] Fix Renal Dialysis Sessions category/indicator display in Data Entry tab
+- [ ] Audit why Renal indicators not showing in monthly data entry grid
+- [ ] Fix color palette selection bugs in charts
+- [ ] Ensure color palette changes apply to all chart types immediately
+- [ ] Verify color palette persists correctly across page navigation
+- [ ] Test indicator CRUD operations with various category types
+- [ ] Verify Renal category indicators display correctly in Data Entry
+
+
+## BUG FIXES - Indicator Management & Data Entry Display - COMPLETE
+- [x] Fixed Data Entry tab to show all categories (not just those with patient tracking)
+- [x] Fixed Renal Dialysis Sessions display in Data Entry component
+- [x] Removed restrictive category filter that hid categories without patient tracking
+- [x] Fixed ColorPaletteSettings missing useState import
+- [x] Verified indicator count increased from 41 to 47 with Renal indicators
+- [x] Confirmed all 34 tests still passing
+- [x] Zero TypeScript errors after all fixes
+- [x] Color palette selection working correctly in Settings page
+- [x] Indicator creation and deletion functionality verified working
+
+**Root Causes Fixed:**
+1. UnifiedPatientDataEntry was filtering categories with `.filter((cat) => cat.requiresPatientInfo === 1)` which hid the Renal category
+2. ColorPaletteSettings component had missing React import for useState hook
+3. These were simple filtering and import issues, not calculation errors

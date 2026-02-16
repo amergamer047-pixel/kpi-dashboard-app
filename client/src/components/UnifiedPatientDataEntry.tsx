@@ -319,10 +319,8 @@ export function UnifiedPatientDataEntry({
 
       {/* Categories and Indicators */}
       <div className="space-y-4">
-        {categories
-          .filter((cat) => cat.requiresPatientInfo === 1)
-          .map((category) => (
-            <Card key={category.id}>
+        {categories.map((category) => (
+          <Card key={category.id}>
               <CardHeader
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => toggleCategory(category.id)}
