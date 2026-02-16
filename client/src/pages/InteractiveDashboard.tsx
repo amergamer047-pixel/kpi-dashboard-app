@@ -40,7 +40,7 @@ import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { DepartmentWizard } from "@/components/DepartmentWizard";
 import { PatientRegistry } from "@/components/PatientRegistry";
-import { UnifiedPatientDataEntry } from "@/components/UnifiedPatientDataEntry";
+import UnifiedDataEntry from "@/components/UnifiedDataEntry";
 
 import { COLOR_PALETTES, getPaletteColors } from "@/lib/colorPalettes";
 const MONTHS = [
@@ -659,12 +659,12 @@ export default function InteractiveDashboard() {
 
           {/* Data Entry Tab - Unified Patient Data Entry */}
           <TabsContent value="data" className="space-y-6">
-            {selectedDepartmentId ? (
-              <UnifiedPatientDataEntry
-                departmentId={selectedDepartmentId}
-                departmentName={departments.find((d: any) => d.id === selectedDepartmentId)?.name || ""}
-              />
-            ) : (
+            <UnifiedDataEntry
+              selectedDepartmentId={selectedDepartmentId}
+              selectedYear={selectedYear}
+              selectedQuarter={selectedQuarter}
+            />
+            {!selectedDepartmentId && (
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">Please select a department to begin data entry</p>

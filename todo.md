@@ -418,3 +418,34 @@ The handleCellClick function was checking if indicator.requiresPatientInfo and o
 1. UnifiedPatientDataEntry was filtering categories with `.filter((cat) => cat.requiresPatientInfo === 1)` which hid the Renal category
 2. ColorPaletteSettings component had missing React import for useState hook
 3. These were simple filtering and import issues, not calculation errors
+
+
+## BUG: RDU Data Mismatch - Charts vs Data Entry - FIXED
+- [x] Investigated RDU data mismatch - found it was stored in monthlyKpiData table
+- [x] Root cause: Data Entry tab was only showing patient-tracking categories
+- [x] Fixed by creating unified data entry supporting both modes
+- [x] RDU now displays correctly in both charts and data entry
+- [x] Data aggregation logic verified working correctly
+
+## FEATURE: Unified Data Entry System - COMPLETE
+- [x] Created UnifiedDataEntry component supporting both modes
+- [x] Implemented monthly data entry grid for direct number input
+- [x] Added edit functionality for monthly data entries
+- [x] Added delete functionality for monthly data entries
+- [x] Implemented patient case display with delete option
+- [x] Added validation for both data entry modes
+- [x] UI shows total value (monthly + patient cases combined)
+- [x] Tested patient tracking mode with full CRUD
+- [x] Tested direct number entry mode with full CRUD
+- [x] Data consistency verified across both modes
+- [x] All 34 tests passing
+- [x] Zero TypeScript errors
+
+**Implementation Details:**
+- UnifiedDataEntry component replaces UnifiedPatientDataEntry
+- Supports flexible data entry: direct numbers OR patient tracking per indicator
+- Full CRUD operations: Create, Read, Update, Delete
+- Data aggregation: Combines monthlyKpiData + patientCases for total display
+- Edit dialog for monthly data with value and notes fields
+- Delete confirmation dialogs for data safety
+- Proper error handling and success notifications
