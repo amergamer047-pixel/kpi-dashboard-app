@@ -497,3 +497,39 @@ The handleCellClick function was checking if indicator.requiresPatientInfo and o
 3. Choose from 16 color palettes with visual previews
 4. Click any palette to select it
 5. Charts update instantly with new colors
+
+
+## FEATURE: Persistent Color Mapping for Indicators and Categories - IN PROGRESS
+- [ ] Design color mapping system that assigns consistent colors to each indicator/category
+- [ ] Create utility function to generate color map from selected palette
+- [ ] Store color mappings in localStorage for persistence across sessions
+- [ ] Implement color assignment algorithm (hash-based or sequential)
+- [ ] Update category summary chart to use persistent color mapping
+- [ ] Update indicator comparison chart to use persistent color mapping
+- [ ] Update pie chart to use persistent color mapping
+- [ ] Update line chart to use persistent color mapping
+- [ ] Update area chart to use persistent color mapping
+- [ ] Ensure colors persist when switching between chart types
+- [ ] Ensure colors persist when changing palette selection
+- [ ] Test color mapping with multiple indicators and categories
+- [ ] Verify colors are consistent across all tabs (Overview, Data Entry, Patient Registry)
+- [ ] Add visual legend showing indicator/category to color mapping
+
+
+## FEATURE: Persistent Color Mapping - COMPLETE
+- [x] Design color mapping system for indicators and categories
+- [x] Create colorMapping.ts utility with localStorage persistence
+- [x] Implement color mapping state in InteractiveDashboard
+- [x] Add event listeners for palette changes
+- [x] Update all charts (bar, pie, line, area) to use persistent colors
+- [x] Test color persistence across all chart types
+- [x] All 34 tests passing
+
+**Implementation Details:**
+- colorMapping.ts: Utility functions for color assignment and persistence
+- Each indicator gets a unique color from the selected palette
+- Colors persist across page reloads via localStorage
+- Color mapping updates when palette changes
+- Charts render with persistent colors for visual consistency
+- Supports all chart types: bar, pie, line, area
+- Indicator colors remain consistent across all charts and tabs

@@ -44,6 +44,7 @@ import UnifiedDataEntry from "@/components/UnifiedDataEntry";
 import SettingsPage from "@/pages/SettingsPage";
 
 import { COLOR_PALETTES, getPaletteColors } from "@/lib/colorPalettes";
+import { buildColorMapping, getStoredColorMapping, saveColorMapping, resetColorMappingForPalette } from "@/lib/colorMapping";
 const MONTHS = [
   "January",
   "February",
@@ -75,20 +76,8 @@ export default function InteractiveDashboard() {
     }
     return "corporate";
   });
+  const [colorMapping, setColorMapping] = useState<Record<string, string>>(() => getStoredColorMapping());
   const currentColors = getPaletteColors(colorPalette);
-
-  // Listen for color palette changes from Settings page
-  useEffect(() => {
-    const handleColorPaletteChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      setColorPalette(customEvent.detail.paletteId);
-    };
-
-    window.addEventListener("colorPaletteChanged", handleColorPaletteChange);
-    return () => {
-      window.removeEventListener("colorPaletteChanged", handleColorPaletteChange);
-    };
-  }, []);
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
@@ -102,6 +91,39 @@ export default function InteractiveDashboard() {
     { departmentId: selectedDepartmentId || 0, year: selectedYear },
     { enabled: !!selectedDepartmentId }
   );
+
+  // Listen for color palette changes from Settings page
+  useEffect(() => {
+    const handleColorPaletteChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const newPaletteId = customEvent.detail.paletteId;
+      setColorPalette(newPaletteId);
+      
+      // Reset color mapping for new palette
+      const newMapping = resetColorMappingForPalette(
+        colorMapping,
+        newPaletteId,
+        indicators,
+        'indicator'
+      );
+      setColorMapping(newMapping);
+      saveColorMapping(newMapping);
+    };
+
+    window.addEventListener("colorPaletteChanged", handleColorPaletteChange);
+    return () => {
+      window.removeEventListener("colorPaletteChanged", handleColorPaletteChange);
+    };
+  }, [indicators, colorMapping]);
+
+  // Build color mapping when indicators change
+  useEffect(() => {
+    if (indicators.length > 0) {
+      const { mapping } = buildColorMapping(indicators, 'indicator', colorPalette, colorMapping);
+      setColorMapping(mapping);
+      saveColorMapping(mapping);
+    }
+  }, [indicators, colorPalette]);
 
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({
@@ -566,7 +588,7 @@ export default function InteractiveDashboard() {
                           ? indicators.filter((ind: any) => ind.categoryId === categoryId)
                           : indicators;
                         
-                        const indicatorData = filteredIndicators.map((ind: any) => {
+                        const indicatorData = filteredIndicators.map((ind: any, index: number) => {
                           // Count from monthlyData
                           const monthlyTotal = monthlyData
                             .filter((d: any) => d.indicatorId === ind.id)
@@ -584,7 +606,11 @@ export default function InteractiveDashboard() {
                               return true;
                             }).length;
                           
-                          return { name: ind.name, value: monthlyTotal + patientTotal };
+                          // Get persistent color for this indicator
+                          const colorKey = `indicator-${ind.id}`;
+                          const indicatorColor = colorMapping[colorKey] || currentColors[index % currentColors.length];
+                          
+                          return { name: ind.name, value: monthlyTotal + patientTotal, color: indicatorColor };
                         });
 
                         if (indicatorData.length === 0) {
@@ -599,7 +625,11 @@ export default function InteractiveDashboard() {
                                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                                 <YAxis />
                                 <Tooltip />
-                                <Bar dataKey="value" fill={currentColors[0]} />
+                                <Bar dataKey="value" fill={currentColors[0]}>
+                                  {indicatorData.map((item: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={item.color} />
+                                  ))}
+                                </Bar>
                               </BarChart>
                             </ResponsiveContainer>
                           );
@@ -609,8 +639,8 @@ export default function InteractiveDashboard() {
                             <ResponsiveContainer width="100%" height={400}>
                               <PieChart>
                                 <Pie data={indicatorData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
-                                  {indicatorData.map((_, i) => (
-                                    <Cell key={`cell-${i}`} fill={currentColors[i % currentColors.length]} />
+                                  {indicatorData.map((item: any, i: number) => (
+                                    <Cell key={`cell-${i}`} fill={item.color} />
                                   ))}
                                 </Pie>
                                 <Tooltip />
@@ -627,7 +657,9 @@ export default function InteractiveDashboard() {
                                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                                 <YAxis />
                                 <Tooltip />
-                                <Line type="monotone" dataKey="value" stroke={currentColors[0]} />
+                                {indicatorData.map((item: any, index: number) => (
+                                  <Line key={`line-${index}`} type="monotone" dataKey="value" stroke={item.color} />
+                                ))}
                               </LineChart>
                             </ResponsiveContainer>
                           );
@@ -639,7 +671,9 @@ export default function InteractiveDashboard() {
                               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                               <YAxis />
                               <Tooltip />
-                                <Area type="monotone" dataKey="value" fill={currentColors[0]} stroke={currentColors[0]} />
+                              {indicatorData.map((item: any, index: number) => (
+                                <Area key={`area-${index}`} type="monotone" dataKey="value" fill={item.color} stroke={item.color} />
+                              ))}
                             </AreaChart>
                           </ResponsiveContainer>
                         );
@@ -684,7 +718,7 @@ export default function InteractiveDashboard() {
             <SettingsPage />
           </TabsContent>
         </Tabs>
-      </div>
+        </div>
       </div>
 
       {/* Footer */}
