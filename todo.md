@@ -468,3 +468,17 @@ The handleCellClick function was checking if indicator.requiresPatientInfo and o
 - Visual preview shows how colors look in actual bar charts
 - Responsive grid layout for palette cards
 - All 34 tests passing with zero errors
+
+
+## BUG: Color Palette Settings Not Visible - FIXED
+- [x] Check if ColorPaletteSettings is imported in SettingsPage
+- [x] Verify Appearance tab is properly rendering the component
+- [x] Check if color palette state is being managed correctly
+- [x] Ensure color palette selector is visible in Settings > Appearance tab
+- [x] Test color palette selection functionality
+
+**Fix Applied:**
+- Changed TabsList grid from `grid-cols-4` to `grid-cols-2 md:grid-cols-4`
+- Ensures all 4 tabs (Departments, Categories, Indicators, Appearance) are visible on mobile
+- Appearance tab now accessible on all screen sizes
+- Color palette selector now visible and functional
