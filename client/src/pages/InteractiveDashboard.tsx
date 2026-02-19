@@ -99,13 +99,25 @@ export default function InteractiveDashboard() {
       const newPaletteId = customEvent.detail.paletteId;
       setColorPalette(newPaletteId);
       
-      // Reset color mapping for new palette
-      const newMapping = resetColorMappingForPalette(
+      // Reset color mapping for both indicators and categories
+      let newMapping: Record<string, string> = {};
+      
+      const indMapping = resetColorMappingForPalette(
         colorMapping,
         newPaletteId,
         indicators,
         'indicator'
       );
+      newMapping = { ...newMapping, ...indMapping };
+      
+      const catMapping = resetColorMappingForPalette(
+        colorMapping,
+        newPaletteId,
+        categories,
+        'category'
+      );
+      newMapping = { ...newMapping, ...catMapping };
+      
       setColorMapping(newMapping);
       saveColorMapping(newMapping);
     };
@@ -116,14 +128,25 @@ export default function InteractiveDashboard() {
     };
   }, [indicators, colorMapping]);
 
-  // Build color mapping when indicators change
+  // Build color mapping when indicators and categories change
   useEffect(() => {
-    if (indicators.length > 0) {
-      const { mapping } = buildColorMapping(indicators, 'indicator', colorPalette, colorMapping);
-      setColorMapping(mapping);
-      saveColorMapping(mapping);
+    if (indicators.length > 0 || categories.length > 0) {
+      let newMapping = { ...colorMapping };
+      
+      if (indicators.length > 0) {
+        const { mapping: indicatorMapping } = buildColorMapping(indicators, 'indicator', colorPalette, colorMapping);
+        newMapping = { ...newMapping, ...indicatorMapping };
+      }
+      
+      if (categories.length > 0) {
+        const { mapping: categoryMapping } = buildColorMapping(categories, 'category', colorPalette, colorMapping);
+        newMapping = { ...newMapping, ...categoryMapping };
+      }
+      
+      setColorMapping(newMapping);
+      saveColorMapping(newMapping);
     }
-  }, [indicators, colorPalette]);
+  }, [indicators, categories, colorPalette]);
 
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({
@@ -271,7 +294,7 @@ export default function InteractiveDashboard() {
     });
     
     return stats;
-  }, [monthlyData, categories, indicators, patientCases, selectedYear, selectedQuarter, viewMode, selectedDepartmentId]);
+  }, [monthlyData, categories, indicators, patientCases, selectedYear, selectedQuarter, viewMode, selectedDepartmentId, colorMapping, currentColors]);
 
   const monthlyChartData = useMemo(() => {
     const data: Record<number, Record<string, number>> = {};
@@ -311,11 +334,18 @@ export default function InteractiveDashboard() {
   }, [monthlyData, categories, indicators, displayMonths, patientCases]);
 
   const chartData = useMemo(() => {
-    return Object.entries(summaryStats).map(([name, value]) => ({
-      name,
-      value,
-    }));
-  }, [summaryStats]);
+    return Object.entries(summaryStats).map(([name, value]) => {
+      const category = categories.find((c: any) => c.name === name);
+      const colorKey = category ? `category-${category.id}` : '';
+      const categoryColor = colorKey && colorMapping[colorKey] ? colorMapping[colorKey] : currentColors[Object.keys(summaryStats).indexOf(name) % currentColors.length];
+      
+      return {
+        name,
+        value,
+        color: categoryColor,
+      };
+    });
+  }, [summaryStats, categories, colorMapping, currentColors]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -497,7 +527,11 @@ export default function InteractiveDashboard() {
                             <XAxis dataKey="name" />
                             <YAxis />
                             <Tooltip />
-                            <Bar dataKey="value" fill={currentColors[0]} />
+                            <Bar dataKey="value" fill={currentColors[0]}>
+                              {chartData.map((item: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={item.color} />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       )}
@@ -514,8 +548,8 @@ export default function InteractiveDashboard() {
                               fill="#8884d8"
                               dataKey="value"
                             >
-                              {chartData.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={currentColors[index % currentColors.length]} />
+                              {chartData.map((item: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={item.color} />
                               ))}
                             </Pie>
                             <Tooltip />
@@ -530,9 +564,13 @@ export default function InteractiveDashboard() {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            {categories.map((c: any, i: number) => (
-                              <Line key={c.id} type="monotone" dataKey={c.name} stroke={currentColors[i % currentColors.length]} />
-                            ))}
+                            {categories.map((c: any) => {
+                              const colorKey = `category-${c.id}`;
+                              const categoryColor = colorMapping[colorKey] || currentColors[categories.indexOf(c) % currentColors.length];
+                              return (
+                                <Line key={c.id} type="monotone" dataKey={c.name} stroke={categoryColor} />
+                              );
+                            })}
                           </LineChart>
                         </ResponsiveContainer>
                       )}
@@ -544,9 +582,13 @@ export default function InteractiveDashboard() {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            {categories.map((c: any, i: number) => (
-                              <Area key={c.id} type="monotone" dataKey={c.name} fill={currentColors[i % currentColors.length]} stroke={currentColors[i % currentColors.length]} />
-                            ))}
+                            {categories.map((c: any) => {
+                              const colorKey = `category-${c.id}`;
+                              const categoryColor = colorMapping[colorKey] || currentColors[categories.indexOf(c) % currentColors.length];
+                              return (
+                                <Area key={c.id} type="monotone" dataKey={c.name} fill={categoryColor} stroke={categoryColor} />
+                              );
+                            })}
                           </AreaChart>
                         </ResponsiveContainer>
                       )}
@@ -566,9 +608,13 @@ export default function InteractiveDashboard() {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          {categories.map((c: any, i: number) => (
-                            <Line key={c.id} type="monotone" dataKey={c.name} stroke={currentColors[i % currentColors.length]} />
-                          ))}
+                          {categories.map((c: any) => {
+                            const colorKey = `category-${c.id}`;
+                            const categoryColor = colorMapping[colorKey] || currentColors[categories.indexOf(c) % currentColors.length];
+                            return (
+                              <Line key={c.id} type="monotone" dataKey={c.name} stroke={categoryColor} />
+                            );
+                          })}
                         </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
