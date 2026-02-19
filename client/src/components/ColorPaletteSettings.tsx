@@ -36,7 +36,7 @@ export function ColorPaletteSettings({
         <CardTitle className="text-lg">Chart Color Palettes</CardTitle>
         <p className="text-sm text-gray-600 mt-2">
           Choose a color scheme for your dashboard charts. All charts will
-          update instantly.
+          update instantly. Hover over colors to see hex values.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -88,6 +88,9 @@ interface PaletteCardProps {
 }
 
 function PaletteCard({ palette, isSelected, onSelect }: PaletteCardProps) {
+  // Sample bar heights for visualization
+  const sampleHeights = [35, 65, 48, 72, 55, 60, 42];
+
   return (
     <button
       onClick={onSelect}
@@ -97,7 +100,8 @@ function PaletteCard({ palette, isSelected, onSelect }: PaletteCardProps) {
           : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Header with name and selection indicator */}
+      <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h4 className="font-semibold text-gray-900 text-sm">
             {palette.name}
@@ -113,16 +117,46 @@ function PaletteCard({ palette, isSelected, onSelect }: PaletteCardProps) {
         )}
       </div>
 
-      {/* Color Swatches */}
-      <div className="flex gap-2 mb-3">
-        {palette.colors.map((color, index) => (
-          <div
-            key={index}
-            className="flex-1 h-8 rounded border border-gray-300 shadow-sm transition-transform hover:scale-105"
-            style={{ backgroundColor: color }}
-            title={color}
-          />
-        ))}
+      {/* Bar Chart Preview - Like accessible color palette examples */}
+      <div className="mb-4 space-y-2">
+        {/* Main bar chart visualization */}
+        <div className="flex items-end gap-1 h-20 p-2 rounded-md border border-gray-200 bg-gray-50">
+          {palette.colors.map((color, index) => {
+            const height = sampleHeights[index % sampleHeights.length];
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center">
+                <div
+                  className="w-full rounded-t transition-all hover:opacity-80 cursor-pointer"
+                  style={{
+                    height: `${height}%`,
+                    backgroundColor: color,
+                    minHeight: "4px",
+                  }}
+                  title={`${color}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Color swatches with hex values */}
+        <div className="grid grid-cols-2 gap-2">
+          {palette.colors.slice(0, 4).map((color, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-2 p-2 rounded bg-gray-50 hover:bg-gray-100 transition-colors"
+              title={`Click to copy: ${color}`}
+            >
+              <div
+                className="w-4 h-4 rounded border border-gray-300 shadow-sm"
+                style={{ backgroundColor: color }}
+              />
+              <code className="text-xs font-mono text-gray-700 truncate">
+                {color}
+              </code>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Accessibility Badge */}
