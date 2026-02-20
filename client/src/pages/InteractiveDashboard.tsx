@@ -42,6 +42,8 @@ import { DepartmentWizard } from "@/components/DepartmentWizard";
 import { PatientRegistry } from "@/components/PatientRegistry";
 import UnifiedDataEntry from "@/components/UnifiedDataEntry";
 import SettingsPage from "@/pages/SettingsPage";
+import { AdvancedCharts } from "@/components/AdvancedCharts";
+import { ColorPaletteSelector } from "@/components/ColorPaletteSelector";
 
 import { COLOR_PALETTES, getPaletteColors } from "@/lib/colorPalettes";
 import { buildColorMapping, getStoredColorMapping, saveColorMapping, resetColorMappingForPalette } from "@/lib/colorMapping";
@@ -60,7 +62,7 @@ const MONTHS = [
   "December",
 ];
 
-type ChartType = "bar" | "pie" | "line" | "area";
+type ChartType = "bar" | "pie" | "line" | "area" | "scatter" | "radar" | "gauge" | "heatmap" | "waterfall" | "funnel";
 
 interface InteractiveDashboardProps {
   userName?: string;
@@ -508,7 +510,7 @@ export default function InteractiveDashboard({ userName, onLogout }: Interactive
             {/* Chart Type Selector & Customization */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap items-start sm:items-center">
               <div className="flex gap-1 sm:gap-2 flex-wrap w-full sm:w-auto">
-                {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
+                {(["bar", "pie", "line", "area", "scatter", "radar", "gauge", "heatmap", "waterfall", "funnel"] as ChartType[]).map((type) => (
                   <Button
                     key={type}
                     variant={chartType === type ? "default" : "outline"}
@@ -516,7 +518,7 @@ export default function InteractiveDashboard({ userName, onLogout }: Interactive
                     className="capitalize text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-3"
                     size="sm"
                   >
-                    {type} Chart
+                    {type === "scatter" ? "Scatter" : type === "radar" ? "Radar" : type === "gauge" ? "Gauge" : type === "heatmap" ? "Heat" : type === "waterfall" ? "Water" : type === "funnel" ? "Funnel" : type.charAt(0).toUpperCase() + type.slice(1)}
                   </Button>
                 ))}
               </div>
@@ -794,6 +796,14 @@ export default function InteractiveDashboard({ userName, onLogout }: Interactive
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
+            <ColorPaletteSelector 
+              currentPalette={colorPalette} 
+              onPaletteChange={(palette) => {
+                setColorPalette(palette);
+                localStorage.setItem("kpiDashboardColorPalette", palette);
+                toast.success(`Color palette changed to ${palette.replace(/_/g, " ")}`);
+              }}
+            />
             <SettingsPage />
           </TabsContent>
         </Tabs>

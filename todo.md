@@ -96,8 +96,35 @@
 
 
 ## Layout & Styling Enhancements
-- [ ] Improve dashboard layout and visual design
-- [ ] Add footer with copyright © Thuraiya Almutaani
+- [x] Improve dashboard layout and visual design
+- [x] Add footer with copyright © Thuraiya Almutaani
+
+## Advanced Chart Visualizations - COMPLETE
+- [x] Add Scatter plot chart type
+- [x] Add Radar/Spider chart type
+- [x] Add Gauge chart type
+- [x] Add Heatmap visualization
+- [x] Add Waterfall chart
+- [x] Add Funnel chart
+- [x] Implement chart animation options
+- [x] Create AdvancedCharts component with all 6 new chart types
+- [x] Integrate advanced charts into dashboard Overview tab
+- [x] All 10 chart types available (Bar, Pie, Line, Area, Scatter, Radar, Gauge, Heat, Water, Funnel)
+
+## Customizable Color Palette - COMPLETE
+- [x] Create color palette selector component
+- [x] Add 16 predefined color schemes:
+  - Corporate, Slate, Midnight, Vibrant, Neon, Sunset, Pastel, Soft
+  - Macarons, Forest, Ocean, Autumn
+  - Deuteranopia, Protanopia, Tritanopia (colorblind-friendly)
+  - Grayscale
+- [x] Implement color palette preview with swatches
+- [x] Save palette preferences to localStorage
+- [x] Apply palette to all charts globally
+- [x] Add palette selector to Settings tab
+- [x] Show current palette with visual indicator
+- [x] Auto-save palette changes
+- [x] Display palette description and usage info
 - [ ] Enhance color scheme and typography
 - [ ] Improve spacing and visual hierarchy
 - [ ] Ensure responsive design maintained
@@ -865,3 +892,47 @@ The PublicDashboard component had two issues:
 - [x] Tested login/logout flow - working perfectly
 - [x] Tested data visibility - public dashboard shows real data
 - [x] All 38 tests passing (1 unrelated failure)
+
+
+## BUG FIX: Department Deletion Not Working
+- [ ] Diagnose why department delete button is not removing departments
+- [ ] Check backend delete procedure implementation
+- [ ] Check frontend delete button click handler
+- [ ] Test delete functionality after fix
+- [ ] Verify cascade delete for related categories and indicators
+- [ ] Test all CRUD operations (Create, Read, Update, Delete)
+
+## General Bug Fixes & Functionality Testing
+- [ ] Test all dashboard tabs (Overview, Data Entry, Patient Registry, Settings)
+- [ ] Test department creation, editing, and deletion
+- [ ] Test category creation, editing, and deletion
+- [ ] Test indicator creation, editing, and deletion
+- [ ] Test data entry and persistence
+- [ ] Test patient case tracking
+- [ ] Test chart generation and filtering
+- [ ] Test export functionality
+- [ ] Verify no console errors
+- [ ] Run full test suite
+
+
+## FEATURE: Advanced Chart Visualizations
+- [ ] Add Scatter plot chart type
+- [ ] Add Bubble chart type
+- [ ] Add Radar/Spider chart type
+- [ ] Add Gauge chart type
+- [ ] Add Heatmap visualization
+- [ ] Add Waterfall chart
+- [ ] Add Funnel chart
+- [ ] Implement chart animation options
+- [ ] Add chart export to image functionality
+- [ ] Add chart data table view
+
+## FEATURE: Customizable Color Palette
+- [ ] Create color palette selector component
+- [ ] Add predefined color schemes (Healthcare, Vibrant, Pastel, Dark, etc.)
+- [ ] Implement custom color picker
+- [ ] Save palette preferences to database
+- [ ] Apply palette to all charts globally
+- [ ] Apply palette to dashboard UI elements
+- [ ] Add palette preview
+- [ ] Implement palette reset to default
