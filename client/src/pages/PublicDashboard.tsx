@@ -54,7 +54,7 @@ export default function PublicDashboard() {
   const { data: indicators = [] } = trpc.public.indicators.useQuery();
   const { data: monthlyData = [] } = trpc.public.monthlyData.useQuery();
 
-  // Load activities from localStorage
+  // Load activities from localStorage - run once on mount
   useEffect(() => {
     const loadActivities = () => {
       try {
@@ -72,57 +72,67 @@ export default function PublicDashboard() {
 
     // Listen for activity updates
     const handleActivity = (event: Event) => {
-      const customEvent = event as CustomEvent;
       loadActivities();
     };
 
     window.addEventListener("kpi-activity", handleActivity);
 
-    // Auto-refresh every 5 seconds
-    const interval = autoRefresh
-      ? setInterval(() => {
-          loadActivities();
-          setLastRefresh(new Date());
-        }, 5000)
-      : undefined;
-
     return () => {
       window.removeEventListener("kpi-activity", handleActivity);
-      if (interval) clearInterval(interval);
     };
+  }, []);
+
+  // Auto-refresh effect (separate from activity loading)
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      setLastRefresh(new Date());
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [autoRefresh]);
 
   // Generate chart data from monthly data
   useEffect(() => {
     if (monthlyData && monthlyData.length > 0) {
-      // Group by month
-      const grouped: Record<string, number> = {};
-      monthlyData.forEach((item: any) => {
-        const month = new Date(item.month).toLocaleString("default", {
-          month: "short",
+      try {
+        // Group by month
+        const grouped: Record<string, number> = {};
+        monthlyData.forEach((item: any) => {
+          // Handle both numeric and string month values
+          let month = "Unknown";
+          if (item.month) {
+            try {
+              const monthNum = typeof item.month === "string" ? parseInt(item.month) : item.month;
+              const monthDate = new Date(2026, monthNum - 1, 1);
+              month = monthDate.toLocaleString("default", { month: "short" });
+            } catch (e) {
+              month = `Month ${item.month}`;
+            }
+          }
+          grouped[month] = (grouped[month] || 0) + (parseFloat(item.value) || 0);
         });
-        grouped[month] = (grouped[month] || 0) + (item.value || 0);
-      });
 
-      const data = Object.entries(grouped).map(([month, value]) => ({
-        name: month,
-        value: value,
-      }));
+        const data = Object.entries(grouped).map(([month, value]) => ({
+          name: month,
+          value: Math.round(value * 100) / 100,
+        }));
 
-      setChartData(data.length > 0 ? data : getDefaultChartData());
+        setChartData(data.length > 0 ? data : getDefaultChartData());
+      } catch (error) {
+        console.error("Error processing chart data:", error);
+        setChartData(getDefaultChartData());
+      }
     } else {
       setChartData(getDefaultChartData());
     }
-  }, [monthlyData]);
+  }, [monthlyData?.length]); // Use length as dependency instead of entire array
 
-  const getDefaultChartData = () => [
-    { name: "Jan", value: 0 },
-    { name: "Feb", value: 0 },
-    { name: "Mar", value: 0 },
-    { name: "Apr", value: 0 },
-    { name: "May", value: 0 },
-    { name: "Jun", value: 0 },
-  ];
+  const getDefaultChartData = () => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months.map(month => ({ name: month, value: 0 }));
+  };
 
   const handleManualRefresh = () => {
     setLastRefresh(new Date());

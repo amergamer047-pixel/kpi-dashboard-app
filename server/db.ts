@@ -25,6 +25,55 @@ export async function getDb() {
   return _db;
 }
 
+// Public data access functions (no authentication required)
+export async function getAllDepartments() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select().from(departments);
+    return result || [];
+  } catch (error) {
+    console.error("[Database] Failed to get departments:", error);
+    return [];
+  }
+}
+
+export async function getAllCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select().from(kpiCategories);
+    return result || [];
+  } catch (error) {
+    console.error("[Database] Failed to get categories:", error);
+    return [];
+  }
+}
+
+export async function getAllIndicators() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select().from(kpiIndicators);
+    return result || [];
+  } catch (error) {
+    console.error("[Database] Failed to get indicators:", error);
+    return [];
+  }
+}
+
+export async function getAllMonthlyData() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select().from(monthlyKpiData);
+    return result || [];
+  } catch (error) {
+    console.error("[Database] Failed to get monthly data:", error);
+    return [];
+  }
+}
+
 // User operations
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
