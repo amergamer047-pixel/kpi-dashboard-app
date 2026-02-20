@@ -7,11 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, Plus, Edit, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useCallback } from "react";
-
-// Stable fallback objects to prevent infinite query loops
-const EMPTY_QUERY_PARAMS = { departmentId: 0, year: 0, quarter: 0 };
-const EMPTY_PATIENT_QUERY_PARAMS = { departmentId: 0, year: 0, quarter: 0 };
+import { useState, useMemo } from "react";
 
 
 interface UnifiedDataEntryProps {
@@ -63,13 +59,13 @@ export default function UnifiedDataEntry({
   const { data: monthlyData = [], refetch: refetchMonthlyData } = trpc.monthlyData.get.useQuery(
     selectedDepartmentId && selectedYear && selectedQuarter
       ? { departmentId: selectedDepartmentId, year: selectedYear, quarter: selectedQuarter }
-      : EMPTY_QUERY_PARAMS,
+      : { departmentId: 0, year: 0, quarter: 0 },
     { enabled: !!selectedDepartmentId }
   );
   const { data: patientCases = [], refetch: refetchPatientCases } = trpc.patientCases.listByDepartment.useQuery(
     selectedDepartmentId && selectedYear
       ? { departmentId: selectedDepartmentId, year: selectedYear, quarter: selectedQuarter }
-      : EMPTY_PATIENT_QUERY_PARAMS,
+      : { departmentId: 0, year: 0, quarter: 0 },
     { enabled: !!selectedDepartmentId }
   );
 

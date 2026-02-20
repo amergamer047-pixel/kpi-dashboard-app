@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -166,22 +166,6 @@ export async function deleteKpiCategory(id: number, userId: number) {
   return { success: true };
 }
 
-export async function bulkDeleteKpiCategories(ids: number[], userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  if (!ids || ids.length === 0) throw new Error("No categories selected");
-  
-  // Delete all selected categories for this user
-  await db.delete(kpiCategories).where(
-    and(
-      inArray(kpiCategories.id, ids),
-      eq(kpiCategories.userId, userId)
-    )
-  );
-  
-  return { success: true, deletedCount: ids.length };
-}
-
 // KPI Indicator operations
 export async function getKpiIndicators(userId: number, categoryId?: number, departmentId?: number) {
   const db = await getDb();
@@ -230,22 +214,6 @@ export async function deleteKpiIndicator(id: number, userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(kpiIndicators).where(and(eq(kpiIndicators.id, id), eq(kpiIndicators.userId, userId)));
   return { success: true };
-}
-
-export async function bulkDeleteKpiIndicators(ids: number[], userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  if (!ids || ids.length === 0) throw new Error("No indicators selected");
-  
-  // Delete all selected indicators for this user
-  await db.delete(kpiIndicators).where(
-    and(
-      inArray(kpiIndicators.id, ids),
-      eq(kpiIndicators.userId, userId)
-    )
-  );
-  
-  return { success: true, deletedCount: ids.length };
 }
 
 // Monthly KPI Data operations

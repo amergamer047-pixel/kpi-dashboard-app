@@ -132,7 +132,7 @@ export default function InteractiveDashboard() {
     return () => {
       window.removeEventListener("colorPaletteChanged", handleColorPaletteChange);
     };
-  }, [indicators]);
+  }, [indicators, colorMapping]);
 
   // Build color mapping when indicators and categories change
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function InteractiveDashboard() {
       setColorMapping(newMapping);
       saveColorMapping(newMapping);
     }
-  }, [indicators, categories, colorPalette]); // colorMapping intentionally excluded to prevent infinite loop
+  }, [indicators, categories, colorPalette]);
 
   // Mutations
   const createDeptMutation = trpc.departments.create.useMutation({

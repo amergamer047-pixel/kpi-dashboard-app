@@ -1,6 +1,5 @@
-"use client";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +23,6 @@ import {
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { ColorPaletteSettings } from "@/components/ColorPaletteSettings";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const DEPARTMENT_COLORS = [
   "#3B82F6", "#22C55E", "#EF4444", "#F59E0B",
@@ -134,33 +132,22 @@ export default function SettingsPage() {
   };
 
   // ===== CATEGORIES =====
+  // Filter categories by selected department
   const { data: allCategories = [], isLoading: catLoading } = trpc.categories.list.useQuery();
   const categories = useMemo(() => {
     if (!selectedDepartmentId) return allCategories;
-    return allCategories.filter(cat => true);
+    // Filter categories that belong to the selected department or are system categories
+    return allCategories.filter(cat => {
+      // For now, show all categories since we don't have departmentId in schema yet
+      // This will be updated once we add department association
+      return true;
+    });
   }, [allCategories, selectedDepartmentId]);
   
   const [showCatDialog, setShowCatDialog] = useState(false);
   const [editingCat, setEditingCat] = useState<any>(null);
   const [catForm, setCatForm] = useState({ name: "", requiresPatientInfo: false });
   const [catToDelete, setCatToDelete] = useState<number | null>(null);
-  const [selectedCatIds, setSelectedCatIds] = useState<Set<number>>(new Set());
-  const [showCatBulkDeleteDialog, setShowCatBulkDeleteDialog] = useState(false);
-  
-  const bulkDeleteCat = trpc.categories.bulkDelete.useMutation({
-    onSuccess: (result) => {
-      // Invalidate all related queries to force refresh
-      utils.categories.list.invalidate();
-      utils.indicators.list.invalidate();
-      utils.monthlyData.get.invalidate();
-      utils.patientCases.listByDepartment.invalidate();
-      utils.departments.list.invalidate();
-      setShowCatBulkDeleteDialog(false);
-      setSelectedCatIds(new Set());
-      toast.success(`Deleted ${result.deletedCount} categories`);
-    },
-    onError: (err) => toast.error("Failed to delete categories"),
-  });
 
   const createCat = trpc.categories.create.useMutation({
     onSuccess: () => {
@@ -208,6 +195,7 @@ export default function SettingsPage() {
       createCat.mutate({
         name: catForm.name,
         requiresPatientInfo: catForm.requiresPatientInfo,
+        // departmentId will be added once schema is updated
       });
     }
   };
@@ -221,50 +209,23 @@ export default function SettingsPage() {
     setShowCatDialog(true);
   };
 
-  const handleCatCheckboxChange = (catId: number) => {
-    const newSet = new Set(selectedCatIds);
-    if (newSet.has(catId)) {
-      newSet.delete(catId);
-    } else {
-      newSet.add(catId);
-    }
-    setSelectedCatIds(newSet);
-  };
-  
-  const handleCatSelectAll = () => {
-    if (selectedCatIds.size === categories.length) {
-      setSelectedCatIds(new Set());
-    } else {
-      setSelectedCatIds(new Set(categories.map((c: any) => c.id)));
-    }
-  };
-
   // ===== INDICATORS =====
+  // Filter indicators by selected department
   const { data: allIndicators = [], isLoading: indLoading } = trpc.indicators.list.useQuery();
   const indicators = useMemo(() => {
     if (!selectedDepartmentId) return allIndicators;
-    return allIndicators.filter(ind => true);
+    // Filter indicators that belong to the selected department or are system indicators
+    return allIndicators.filter(ind => {
+      // For now, show all indicators since we don't have departmentId in schema yet
+      // This will be updated once we add department association
+      return true;
+    });
   }, [allIndicators, selectedDepartmentId]);
   
   const [showIndDialog, setShowIndDialog] = useState(false);
   const [editingInd, setEditingInd] = useState<any>(null);
   const [indForm, setIndForm] = useState({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
   const [indToDelete, setIndToDelete] = useState<number | null>(null);
-  const [selectedIndIds, setSelectedIndIds] = useState<Set<number>>(new Set());
-  const [showIndBulkDeleteDialog, setShowIndBulkDeleteDialog] = useState(false);
-  
-  const bulkDeleteInd = trpc.indicators.bulkDelete.useMutation({
-    onSuccess: (result) => {
-      // Invalidate all related queries to force refresh
-      utils.indicators.list.invalidate();
-      utils.monthlyData.get.invalidate();
-      utils.patientCases.listByDepartment.invalidate();
-      setShowIndBulkDeleteDialog(false);
-      setSelectedIndIds(new Set());
-      toast.success(`Deleted ${result.deletedCount} indicators`);
-    },
-    onError: (err) => toast.error("Failed to delete indicators"),
-  });
 
   const createInd = trpc.indicators.create.useMutation({
     onSuccess: () => {
@@ -318,6 +279,7 @@ export default function SettingsPage() {
         name: indForm.name,
         unit: indForm.unit || "cases",
         requiresPatientInfo: indForm.requiresPatientInfo,
+        // departmentId will be added once schema is updated
       });
     }
   };
@@ -332,33 +294,6 @@ export default function SettingsPage() {
     });
     setShowIndDialog(true);
   };
-
-  const handleIndCheckboxChange = (indId: number) => {
-    const newSet = new Set(selectedIndIds);
-    if (newSet.has(indId)) {
-      newSet.delete(indId);
-    } else {
-      newSet.add(indId);
-    }
-    setSelectedIndIds(newSet);
-  };
-  
-  const handleIndSelectAll = () => {
-    if (selectedIndIds.size === indicators.length) {
-      setSelectedIndIds(new Set());
-    } else {
-      setSelectedIndIds(new Set(indicators.map((i: any) => i.id)));
-    }
-  };
-  
-  // Clear selections when data changes
-  useEffect(() => {
-    setSelectedCatIds(new Set());
-  }, [categories]);
-  
-  useEffect(() => {
-    setSelectedIndIds(new Set());
-  }, [indicators]);
 
   return (
     <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8">
@@ -459,30 +394,18 @@ export default function SettingsPage() {
           {/* CATEGORIES TAB */}
           <TabsContent value="categories">
             <Card>
-              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-                <CardTitle className="text-lg sm:text-xl">Manage Categories</CardTitle>
-                <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
-                  {selectedCatIds.size > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setShowCatBulkDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Selected ({selectedCatIds.size})
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => {
-                      setEditingCat(null);
-                      setCatForm({ name: "", requiresPatientInfo: false });
-                      setShowCatDialog(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Category
-                  </Button>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Manage Categories</CardTitle>
+                <Button
+                  onClick={() => {
+                    setEditingCat(null);
+                    setCatForm({ name: "", requiresPatientInfo: false });
+                    setShowCatDialog(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
               </CardHeader>
               <CardContent>
                 {catLoading ? (
@@ -497,43 +420,19 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Select All Row */}
-                    <div className="p-4 border rounded-lg bg-muted/30 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={selectedCatIds.size === categories.length && categories.length > 0}
-                          onCheckedChange={handleCatSelectAll}
-                        />
-                        <span className="font-medium text-sm">Select All</span>
-                      </div>
-                      {selectedCatIds.size > 0 && (
-                        <span className="text-sm text-muted-foreground">{selectedCatIds.size} selected</span>
-                      )}
-                    </div>
-
-                    {/* Category Items */}
                     {categories.map((cat: any) => {
                       const catInds = indicators.filter((ind: any) => ind.categoryId === cat.id);
-                      const isSelected = selectedCatIds.has(cat.id);
                       return (
                         <div
                           key={cat.id}
-                          className={`p-4 border rounded-lg transition-colors ${
-                            isSelected ? "bg-blue-50 border-blue-200" : "hover:bg-muted/50"
-                          }`}
+                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3 flex-1">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => handleCatCheckboxChange(cat.id)}
-                              />
-                              <div>
-                                <h4 className="font-medium">{cat.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {catInds.length} indicator{catInds.length !== 1 ? "s" : ""}
-                                </p>
-                              </div>
+                            <div>
+                              <h4 className="font-medium">{cat.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {catInds.length} indicator{catInds.length !== 1 ? "s" : ""}
+                              </p>
                             </div>
                             <div className="flex gap-2">
                               {cat.requiresPatientInfo && (
@@ -570,30 +469,18 @@ export default function SettingsPage() {
           {/* INDICATORS TAB */}
           <TabsContent value="indicators">
             <Card>
-              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-                <CardTitle className="text-lg sm:text-xl">Manage Indicators</CardTitle>
-                <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
-                  {selectedIndIds.size > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setShowIndBulkDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Selected ({selectedIndIds.size})
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => {
-                      setEditingInd(null);
-                      setIndForm({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
-                      setShowIndDialog(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Indicator
-                  </Button>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Manage Indicators</CardTitle>
+                <Button
+                  onClick={() => {
+                    setEditingInd(null);
+                    setIndForm({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
+                    setShowIndDialog(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Indicator
+                </Button>
               </CardHeader>
               <CardContent>
                 {indLoading ? (
@@ -608,50 +495,35 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Select All Row */}
-                    <div className="p-4 border rounded-lg bg-muted/30 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={selectedIndIds.size === indicators.length && indicators.length > 0}
-                          onCheckedChange={handleIndSelectAll}
-                        />
-                        <span className="font-medium text-sm">Select All</span>
-                      </div>
-                      {selectedIndIds.size > 0 && (
-                        <span className="text-sm text-muted-foreground">{selectedIndIds.size} selected</span>
-                      )}
-                    </div>
-
-                    {/* Indicator Items */}
                     {indicators.map((ind: any) => {
                       const cat = categories.find((c: any) => c.id === ind.categoryId);
-                      const isSelected = selectedIndIds.has(ind.id);
                       return (
                         <div
                           key={ind.id}
-                          className={`p-4 border rounded-lg transition-colors ${
-                            isSelected ? "bg-blue-50 border-blue-200" : "hover:bg-muted/50"
-                          }`}
+                          className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 flex-1">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => handleIndCheckboxChange(ind.id)}
-                              />
-                              <div>
-                                <h4 className="font-medium">{ind.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {cat?.name || "Unknown Category"} • {ind.unit || "cases"}
-                                </p>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{ind.name}</h4>
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                  {cat?.name || "Unknown"}
+                                </span>
+                                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                  Unit: {ind.unit || "cases"}
+                                </span>
+                                {ind.requiresPatientInfo ? (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
+                                    <Check className="h-3 w-3" /> Patient Tracking
+                                  </span>
+                                ) : (
+                                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded flex items-center gap-1">
+                                    <X className="h-3 w-3" /> No Patient Tracking
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              {ind.requiresPatientInfo && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
-                                  <Check className="h-3 w-3" /> Patient Tracking
-                                </span>
-                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -680,49 +552,53 @@ export default function SettingsPage() {
 
           {/* APPEARANCE TAB */}
           <TabsContent value="appearance">
-            <ColorPaletteSettings
-              selectedPalette={selectedColorPalette}
-              onPaletteChange={setSelectedColorPalette}
-            />
+            <div className="space-y-6">
+              <ColorPaletteSettings
+                selectedPalette={selectedColorPalette}
+                onPaletteChange={setSelectedColorPalette}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* DIALOGS */}
-      {/* Department Dialog */}
+      {/* DEPARTMENT DIALOG */}
       <Dialog open={showDeptDialog} onOpenChange={setShowDeptDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingDept ? "Edit Department" : "Create Department"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Department Name</Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="dept-name">Name *</Label>
               <Input
+                id="dept-name"
                 value={deptForm.name}
                 onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
-                placeholder="e.g., ICU Ward"
+                placeholder="e.g., Male Ward"
               />
             </div>
-            <div>
-              <Label>Description</Label>
+            <div className="space-y-2">
+              <Label htmlFor="dept-desc">Description</Label>
               <Input
+                id="dept-desc"
                 value={deptForm.description}
                 onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
                 placeholder="Optional description"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Color</Label>
               <div className="flex gap-2 flex-wrap">
                 {DEPARTMENT_COLORS.map((color) => (
                   <button
                     key={color}
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      deptForm.color === color ? "border-foreground" : "border-transparent"
+                    type="button"
+                    onClick={() => setDeptForm({ ...deptForm, color })}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      deptForm.color === color ? "border-foreground scale-110" : "border-transparent"
                     }`}
                     style={{ backgroundColor: color }}
-                    onClick={() => setDeptForm({ ...deptForm, color })}
                   />
                 ))}
               </div>
@@ -732,70 +608,79 @@ export default function SettingsPage() {
             <Button variant="outline" onClick={() => setShowDeptDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleDeptSave}>
+            <Button onClick={handleDeptSave} disabled={createDept.isPending || updateDept.isPending}>
               {editingDept ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Category Dialog */}
+      {/* CATEGORY DIALOG */}
       <Dialog open={showCatDialog} onOpenChange={setShowCatDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingCat ? "Edit Category" : "Create Category"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Category Name</Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cat-name">Category Name *</Label>
               <Input
+                id="cat-name"
                 value={catForm.name}
                 onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
-                placeholder="e.g., Mandatory"
+                placeholder="e.g., Mandatory, Respiratory, Renal"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20">
+              <input
+                type="checkbox"
+                id="cat-patient-tracking"
                 checked={catForm.requiresPatientInfo}
-                onCheckedChange={(checked) =>
-                  setCatForm({ ...catForm, requiresPatientInfo: checked === true })
-                }
+                onChange={(e) => setCatForm({ ...catForm, requiresPatientInfo: e.target.checked })}
+                className="h-4 w-4"
               />
-              <Label>Requires Patient Tracking</Label>
+              <label htmlFor="cat-patient-tracking" className="flex-1 cursor-pointer">
+                <span className="font-medium text-sm">Enable Patient Tracking</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Allows recording Hospital ID and Patient Name for incidents in this category
+                </p>
+              </label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCatDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCatSave}>
+            <Button onClick={handleCatSave} disabled={createCat.isPending || updateCat.isPending}>
               {editingCat ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Indicator Dialog */}
+      {/* INDICATOR DIALOG */}
       <Dialog open={showIndDialog} onOpenChange={setShowIndDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingInd ? "Edit Indicator" : "Create Indicator"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Indicator Name</Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="ind-name">Indicator Name *</Label>
               <Input
+                id="ind-name"
                 value={indForm.name}
                 onChange={(e) => setIndForm({ ...indForm, name: e.target.value })}
                 placeholder="e.g., Fall Incidents"
               />
             </div>
-            <div>
-              <Label>Category</Label>
+            <div className="space-y-2">
+              <Label htmlFor="ind-category">Category *</Label>
               <select
+                id="ind-category"
                 value={indForm.categoryId}
                 onChange={(e) => setIndForm({ ...indForm, categoryId: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border rounded-md bg-background"
+                className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value={0}>Select a category</option>
                 {categories.map((cat: any) => (
@@ -805,47 +690,57 @@ export default function SettingsPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <Label>Unit</Label>
+            <div className="space-y-2">
+              <Label htmlFor="ind-unit">Unit of Measurement</Label>
               <Input
+                id="ind-unit"
                 value={indForm.unit}
                 onChange={(e) => setIndForm({ ...indForm, unit: e.target.value })}
-                placeholder="e.g., cases"
+                placeholder="e.g., cases, sessions, incidents"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20">
+              <input
+                type="checkbox"
+                id="ind-patient-tracking"
                 checked={indForm.requiresPatientInfo}
-                onCheckedChange={(checked) =>
-                  setIndForm({ ...indForm, requiresPatientInfo: checked === true })
-                }
+                onChange={(e) => setIndForm({ ...indForm, requiresPatientInfo: e.target.checked })}
+                className="h-4 w-4"
               />
-              <Label>Requires Patient Tracking</Label>
+              <label htmlFor="ind-patient-tracking" className="flex-1 cursor-pointer">
+                <span className="font-medium text-sm">Track Patient Details</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Record Hospital ID and Patient Name for each case
+                </p>
+              </label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowIndDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleIndSave}>
+            <Button onClick={handleIndSave} disabled={createInd.isPending || updateInd.isPending}>
               {editingInd ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialogs */}
-      {/* Department Delete */}
-      <AlertDialog open={deptToDelete !== null} onOpenChange={(open) => !open && setDeptToDelete(null)}>
+      {/* DELETE DIALOGS */}
+      <AlertDialog open={deptToDelete !== null} onOpenChange={() => setDeptToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete Department?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. All categories and indicators associated with this department will be deleted.
+            This will delete the department and all associated KPI data. This action cannot be undone.
           </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deptToDelete && deleteDept.mutate({ id: deptToDelete })}
+              onClick={() => {
+                if (deptToDelete) {
+                  deleteDept.mutate({ id: deptToDelete });
+                }
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
@@ -854,96 +749,66 @@ export default function SettingsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Departments */}
+      <AlertDialog open={catToDelete !== null} onOpenChange={() => setCatToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will delete the category and all associated indicators. This action cannot be undone.
+          </AlertDialogDescription>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (catToDelete) {
+                  deleteCat.mutate({ id: catToDelete });
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={indToDelete !== null} onOpenChange={() => setIndToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete Indicator?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will delete the indicator and all associated data. This action cannot be undone.
+          </AlertDialogDescription>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (indToDelete) {
+                  deleteInd.mutate({ id: indToDelete });
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete All Departments?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will delete all {departments.length} departments and all their associated categories and indicators. This action cannot be undone.
+            This will delete all departments and all associated data. This action cannot be undone.
           </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => bulkDeleteDepts.mutate({ ids: departments.map(d => d.id) })}
+              onClick={() => {
+                const deptIds = departments.map((d: any) => d.id);
+                bulkDeleteDepts.mutate({ ids: deptIds });
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete All
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Category Delete */}
-      <AlertDialog open={catToDelete !== null} onOpenChange={(open) => !open && setCatToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. All indicators in this category will be deleted.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => catToDelete && deleteCat.mutate({ id: catToDelete })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Bulk Delete Categories */}
-      <AlertDialog open={showCatBulkDeleteDialog} onOpenChange={setShowCatBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Delete {selectedCatIds.size} Categories?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will delete {selectedCatIds.size} selected categories and all their associated indicators. This action cannot be undone.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => bulkDeleteCat.mutate({ ids: Array.from(selectedCatIds) })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Indicator Delete */}
-      <AlertDialog open={indToDelete !== null} onOpenChange={(open) => !open && setIndToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Delete Indicator?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => indToDelete && deleteInd.mutate({ id: indToDelete })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Bulk Delete Indicators */}
-      <AlertDialog open={showIndBulkDeleteDialog} onOpenChange={setShowIndBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Delete {selectedIndIds.size} Indicators?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will delete {selectedIndIds.size} selected indicators. This action cannot be undone.
-          </AlertDialogDescription>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => bulkDeleteInd.mutate({ ids: Array.from(selectedIndIds) })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
