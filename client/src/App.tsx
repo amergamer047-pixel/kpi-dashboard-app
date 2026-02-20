@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import InteractiveDashboard from "@/pages/InteractiveDashboard";
+import PublicDashboard from "@/pages/PublicDashboard";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -9,8 +10,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={InteractiveDashboard} />
-      <Route path={"/404"} component={NotFound} />
+      <Route path="/" component={InteractiveDashboard} />
+      <Route path="/public" component={PublicDashboard} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
