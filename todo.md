@@ -816,3 +816,52 @@ The PublicDashboard component had two issues:
 - Main dashboard loads without errors
 - All tests passing (38/39)
 - Public dashboard tests: 5/5 passing
+
+
+## FEATURE: Public Dashboard Sharing - IN PROGRESS
+- [ ] Design sharing link schema and database table
+- [ ] Create shareLinks table with unique token, owner, password hash, expiry, and metadata
+- [ ] Implement sharing link generation endpoint
+- [ ] Add copy-to-clipboard functionality for sharing links
+- [ ] Create public share page (/share/:token) with optional password protection
+- [ ] Implement password verification for protected shares
+- [ ] Add sharing UI to Settings tab
+- [ ] Display current share status and link in dashboard
+- [ ] Add ability to regenerate share tokens
+- [ ] Add ability to delete/revoke share links
+- [ ] Test sharing with and without password protection
+- [ ] Verify shared dashboard displays real-time data
+- [ ] Add expiry date option for shares
+- [ ] Create share management interface showing all active shares
+
+
+## FEATURE: Collaborative Dashboard Sharing - IN PROGRESS
+- [ ] Design collaborative sharing architecture with real-time sync
+- [ ] Update dashboard_shares table schema for collaborative access
+- [ ] Implement WebSocket/real-time event system for live updates
+- [ ] Create shared dashboard access control and permissions
+- [ ] Add collaborator management (invite, remove, role assignment)
+- [ ] Build collaborative editing UI with live cursors and activity tracking
+- [ ] Implement real-time forecasting with shared data
+- [ ] Add activity log showing who made what changes
+- [ ] Implement conflict resolution for simultaneous edits
+- [ ] Create shared dashboard view page (/share/:token)
+- [ ] Add share link generation and management UI
+- [ ] Test collaborative features end-to-end
+- [ ] Verify real-time sync across multiple users
+- [ ] Test forecasting with live data updates
+
+
+## FEATURE: Dual-Access Dashboard (Public View + Name-Based Edit Mode) - COMPLETE
+- [x] Replaced OAuth login with simple name-only entry
+- [x] Public dashboard accessible without login (view-only charts)
+- [x] Edit mode accessible via "Edit Dashboard" button
+- [x] Simple name login screen (no password required)
+- [x] User profile section showing logged-in user's name and avatar
+- [x] Logout button to return to public dashboard
+- [x] Real-time data sync between public and edit modes
+- [x] All editing features available in edit mode
+- [x] Activity tracking with user names
+- [x] Tested login/logout flow - working perfectly
+- [x] Tested data visibility - public dashboard shows real data
+- [x] All 38 tests passing (1 unrelated failure)

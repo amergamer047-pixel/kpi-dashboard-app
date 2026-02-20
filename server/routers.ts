@@ -11,7 +11,7 @@ import {
   getMonthlyKpiData, upsertMonthlyKpiData,
   getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
   getQuarterlySummary, initializeSystemData, getDb,
-  getAllDepartments, getAllCategories, getAllIndicators, getAllMonthlyData
+
 } from "./db";
 import { monthlyKpiData, departments, kpiCategories, kpiIndicators } from "../drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -351,19 +351,27 @@ export const appRouter = router({
   // Public routes for public dashboard (no authentication required)
   public: router({
     departments: publicProcedure.query(async () => {
-      return getAllDepartments();
+      const db = await getDb();
+      if (!db) return [];
+      return await db.select().from(departments);
     }),
 
     categories: publicProcedure.query(async () => {
-      return getAllCategories();
+      const db = await getDb();
+      if (!db) return [];
+      return await db.select().from(kpiCategories);
     }),
 
     indicators: publicProcedure.query(async () => {
-      return getAllIndicators();
+      const db = await getDb();
+      if (!db) return [];
+      return await db.select().from(kpiIndicators);
     }),
 
     monthlyData: publicProcedure.query(async () => {
-      return getAllMonthlyData();
+      const db = await getDb();
+      if (!db) return [];
+      return await db.select().from(monthlyKpiData);
     }),
   }),
 });

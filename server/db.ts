@@ -7,9 +7,11 @@ import {
   kpiIndicators, InsertKpiIndicator,
   monthlyKpiData, InsertMonthlyKpiData,
   patientCases, InsertPatientCase,
-  quarterlyReports, InsertQuarterlyReport
+  quarterlyReports, InsertQuarterlyReport,
+  dashboardShares, InsertDashboardShare, DashboardShare
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import crypto from 'crypto';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -554,4 +556,126 @@ export async function bulkFreezeDepartments(ids: number[], isFrozen: boolean) {
   
   await db.update(departments).set({ isFrozen: isFrozen ? 1 : 0 }).where(sql`${departments.id} IN (${sql.raw(ids.join(","))})`);
   return { success: true, updatedCount: ids.length, isFrozen };
+}
+
+
+// Dashboard sharing functions
+export async function generateShareToken(): Promise<string> {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const hashedInput = crypto.createHash('sha256').update(password).digest('hex');
+  return hashedInput === hash;
+}
+
+export async function createDashboardShare(
+  userId: number,
+  title: string,
+  description?: string,
+  password?: string
+): Promise<DashboardShare | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const token = await generateShareToken();
+    const passwordHash = password ? await hashPassword(password) : null;
+
+    await db.insert(dashboardShares).values({
+      userId,
+      token,
+      title,
+      description: description || null,
+      passwordHash,
+      isPublic: password ? 0 : 1,
+    } as InsertDashboardShare);
+
+    // Fetch and return the created share
+    const shares = await db
+      .select()
+      .from(dashboardShares)
+      .where(eq(dashboardShares.token, token))
+      .limit(1);
+
+    return shares[0] || null;
+  } catch (error) {
+    console.error("[Database] Failed to create dashboard share:", error);
+    return null;
+  }
+}
+
+export async function getShareByToken(token: string): Promise<DashboardShare | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const shares = await db
+      .select()
+      .from(dashboardShares)
+      .where(eq(dashboardShares.token, token))
+      .limit(1);
+
+    return shares[0] || null;
+  } catch (error) {
+    console.error("[Database] Failed to get share:", error);
+    return null;
+  }
+}
+
+export async function getUserShares(userId: number): Promise<DashboardShare[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const shares = await db
+      .select()
+      .from(dashboardShares)
+      .where(eq(dashboardShares.userId, userId))
+      .orderBy(desc(dashboardShares.createdAt));
+
+    return shares || [];
+  } catch (error) {
+    console.error("[Database] Failed to get user shares:", error);
+    return [];
+  }
+}
+
+export async function deleteShare(shareId: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db
+      .delete(dashboardShares)
+      .where(and(eq(dashboardShares.id, shareId), eq(dashboardShares.userId, userId)));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete share:", error);
+    return false;
+  }
+}
+
+export async function updateShareViewCount(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    const share = await getShareByToken(token);
+    if (share) {
+      await db
+        .update(dashboardShares)
+        .set({
+          viewCount: (share.viewCount || 0) + 1,
+          lastViewedAt: new Date(),
+        })
+        .where(eq(dashboardShares.id, share.id));
+    }
+  } catch (error) {
+    console.error("[Database] Failed to update view count:", error);
+  }
 }

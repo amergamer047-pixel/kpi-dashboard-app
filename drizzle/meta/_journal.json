@@ -43,6 +43,13 @@
       "when": 1771596350651,
       "tag": "0005_worthless_landau",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771627851333,
+      "tag": "0006_vengeful_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

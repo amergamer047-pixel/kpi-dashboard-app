@@ -134,3 +134,56 @@ export const quarterlyReports = mysqlTable("quarterly_reports", {
 
 export type QuarterlyReport = typeof quarterlyReports.$inferSelect;
 export type InsertQuarterlyReport = typeof quarterlyReports.$inferInsert;
+
+/**
+ * Dashboard Shares - public sharing links for dashboards
+ */
+export const dashboardShares = mysqlTable("dashboard_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(), // Unique share token
+  title: varchar("title", { length: 255 }).default("Shared Dashboard"),
+  description: text("description"),
+  allowEditing: int("allowEditing").default(1), // 1 = can edit, 0 = read-only
+  allowForecasting: int("allowForecasting").default(1), // 1 = can forecast, 0 = view only
+  expiresAt: timestamp("expiresAt"), // Optional expiry date
+  viewCount: int("viewCount").default(0), // Track views
+  lastViewedAt: timestamp("lastViewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DashboardShare = typeof dashboardShares.$inferSelect;
+export type InsertDashboardShare = typeof dashboardShares.$inferInsert;
+
+/**
+ * Share Collaborators - track who has access to shared dashboards
+ */
+export const shareCollaborators = mysqlTable("share_collaborators", {
+  id: int("id").autoincrement().primaryKey(),
+  shareId: int("shareId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner", "editor", "viewer"]).default("editor"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  lastActiveAt: timestamp("lastActiveAt").defaultNow().notNull(),
+});
+
+export type ShareCollaborator = typeof shareCollaborators.$inferSelect;
+export type InsertShareCollaborator = typeof shareCollaborators.$inferInsert;
+
+/**
+ * Share Activity Log - track changes made on shared dashboards
+ */
+export const shareActivityLog = mysqlTable("share_activity_log", {
+  id: int("id").autoincrement().primaryKey(),
+  shareId: int("shareId").notNull(),
+  userId: int("userId").notNull(),
+  action: varchar("action", { length: 50 }).notNull(), // create, update, delete, forecast
+  entityType: varchar("entityType", { length: 50 }).notNull(), // department, indicator, monthlyData, forecast
+  entityId: int("entityId"),
+  changes: text("changes"), // JSON of what changed
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export type ShareActivityLog = typeof shareActivityLog.$inferSelect;
+export type InsertShareActivityLog = typeof shareActivityLog.$inferInsert;

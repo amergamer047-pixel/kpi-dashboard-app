@@ -62,7 +62,12 @@ const MONTHS = [
 
 type ChartType = "bar" | "pie" | "line" | "area";
 
-export default function InteractiveDashboard() {
+interface InteractiveDashboardProps {
+  userName?: string;
+  onLogout?: () => void;
+}
+
+export default function InteractiveDashboard({ userName, onLogout }: InteractiveDashboardProps = {}) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedQuarter, setSelectedQuarter] = useState(1);
@@ -362,7 +367,28 @@ export default function InteractiveDashboard() {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Healthcare KPI Dashboard</h1>
               <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">Monitor and track key performance indicators across departments</p>
             </div>
-            <div className="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto items-start sm:items-center">
+              {userName && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-gray-900">{userName}</span>
+                    <span className="text-xs text-gray-500">Editing</span>
+                  </div>
+                </div>
+              )}
+              {onLogout && (
+                <Button
+                  onClick={onLogout}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Logout
+                </Button>
+              )}
               <DepartmentWizard />
             </div>
           </div>
