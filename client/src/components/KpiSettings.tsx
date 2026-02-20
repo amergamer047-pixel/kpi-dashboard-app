@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -64,18 +65,36 @@ export function KpiSettings() {
   const [selectAll, setSelectAll] = useState(false);
 
   // Categories
-  const { data: categories = [] } = trpc.categories.list.useQuery();
+  const { data: categoriesData = [] } = trpc.categories.list.useQuery();
+  const categories = useMemo(() => categoriesData, [categoriesData]);
   const [catDialog, setCatDialog] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [catForm, setCatForm] = useState({ name: "", requiresPatientInfo: false });
   const [deleteCatId, setDeleteCatId] = useState<number | null>(null);
 
   // Indicators
-  const { data: indicators = [] } = trpc.indicators.list.useQuery();
+  const { data: indicatorsData = [] } = trpc.indicators.list.useQuery();
+  const indicators = useMemo(() => indicatorsData, [indicatorsData]);
   const [indDialog, setIndDialog] = useState(false);
   const [editingInd, setEditingInd] = useState<Indicator | null>(null);
   const [indForm, setIndForm] = useState({ name: "", categoryId: 0, unit: "", requiresPatientInfo: false });
   const [deleteIndId, setDeleteIndId] = useState<number | null>(null);
+
+  // Memoize category options for select dropdown to prevent infinite loops
+  const categoryOptions = useMemo(() => categories, [categories]);
+
+  // Memoize dialog handlers to prevent infinite loops
+  const handleIndDialogChange = useCallback((open: boolean) => {
+    setIndDialog(open);
+  }, []);
+
+  const handleCatDialogChange = useCallback((open: boolean) => {
+    setCatDialog(open);
+  }, []);
+
+  const handleDeptDialogChange = useCallback((open: boolean) => {
+    setDeptDialog(open);
+  }, []);
 
   // Mutations
   const createDept = trpc.departments.create.useMutation({
@@ -449,12 +468,15 @@ export function KpiSettings() {
       </Tabs>
 
       {/* Department Dialog */}
-      <Dialog open={deptDialog} onOpenChange={setDeptDialog}>
+      <Dialog open={deptDialog} onOpenChange={handleDeptDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingDept ? "Edit Department" : "Create Department"}
             </DialogTitle>
+            <DialogDescription>
+              {editingDept ? "Update department details" : "Create a new department"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -504,10 +526,13 @@ export function KpiSettings() {
       </Dialog>
 
       {/* Category Dialog */}
-      <Dialog open={catDialog} onOpenChange={setCatDialog}>
+      <Dialog open={catDialog} onOpenChange={handleCatDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Category</DialogTitle>
+            <DialogDescription>
+              Add a new category for organizing indicators
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -547,10 +572,13 @@ export function KpiSettings() {
       </Dialog>
 
       {/* Indicator Dialog */}
-      <Dialog open={indDialog} onOpenChange={setIndDialog}>
+      <Dialog open={indDialog} onOpenChange={handleIndDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Indicator</DialogTitle>
+            <DialogDescription>
+              Add a new KPI indicator to track
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -571,7 +599,7 @@ export function KpiSettings() {
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value={0}>Select a category</option>
-                {categories.map((cat: Category) => (
+                {categoryOptions.map((cat: Category) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>
