@@ -1,5 +1,5 @@
-import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { and, eq, or, isNull, desc, asc, sql } from "drizzle-orm";
 import { 
   InsertUser, users, 
   departments, InsertDepartment,
@@ -135,8 +135,14 @@ export async function getKpiCategories(userId: number, departmentId?: number) {
   if (!db) return [];
   
   if (departmentId) {
+    // Return both department-specific categories AND system categories (those without departmentId)
     return db.select().from(kpiCategories)
-      .where(and(eq(kpiCategories.userId, userId), eq(kpiCategories.departmentId, departmentId)))
+      .where(
+        or(
+          and(eq(kpiCategories.userId, userId), eq(kpiCategories.departmentId, departmentId)),
+          and(eq(kpiCategories.userId, userId), isNull(kpiCategories.departmentId))
+        )
+      )
       .orderBy(asc(kpiCategories.sortOrder), asc(kpiCategories.name));
   }
   
@@ -172,20 +178,31 @@ export async function getKpiIndicators(userId: number, categoryId?: number, depa
   if (!db) return [];
   
   if (categoryId) {
+    // Return both department-specific indicators AND system indicators (those without departmentId)
     return db.select().from(kpiIndicators)
       .where(and(
         eq(kpiIndicators.userId, userId),
         eq(kpiIndicators.categoryId, categoryId),
-        departmentId ? eq(kpiIndicators.departmentId, departmentId) : undefined
+        or(
+          departmentId ? eq(kpiIndicators.departmentId, departmentId) : isNull(kpiIndicators.departmentId),
+          isNull(kpiIndicators.departmentId)
+        )
       ))
       .orderBy(asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
   }
   
   if (departmentId) {
+    // Return both department-specific indicators AND system indicators (those without departmentId)
     return db.select().from(kpiIndicators)
-      .where(and(
-        eq(kpiIndicators.userId, userId),
-        eq(kpiIndicators.departmentId, departmentId)
+      .where(or(
+        and(
+          eq(kpiIndicators.userId, userId),
+          eq(kpiIndicators.departmentId, departmentId)
+        ),
+        and(
+          eq(kpiIndicators.userId, userId),
+          isNull(kpiIndicators.departmentId)
+        )
       ))
       .orderBy(asc(kpiIndicators.categoryId), asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
   }
