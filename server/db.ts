@@ -100,7 +100,8 @@ export async function getUserByOpenId(openId: string) {
 export async function getDepartments(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(departments).where(eq(departments.userId, userId)).orderBy(asc(departments.name));
+  // Return all departments regardless of userId - departments are shared across all users
+  return db.select().from(departments).orderBy(asc(departments.name));
 }
 
 export async function createDepartment(data: InsertDepartment) {
