@@ -149,8 +149,12 @@ export default function SettingsPage() {
   
   const bulkDeleteCat = trpc.categories.bulkDelete.useMutation({
     onSuccess: (result) => {
+      // Invalidate all related queries to force refresh
       utils.categories.list.invalidate();
       utils.indicators.list.invalidate();
+      utils.monthlyData.get.invalidate();
+      utils.patientCases.listByDepartment.invalidate();
+      utils.departments.list.invalidate();
       setShowCatBulkDeleteDialog(false);
       setSelectedCatIds(new Set());
       toast.success(`Deleted ${result.deletedCount} categories`);
@@ -251,7 +255,10 @@ export default function SettingsPage() {
   
   const bulkDeleteInd = trpc.indicators.bulkDelete.useMutation({
     onSuccess: (result) => {
+      // Invalidate all related queries to force refresh
       utils.indicators.list.invalidate();
+      utils.monthlyData.get.invalidate();
+      utils.patientCases.listByDepartment.invalidate();
       setShowIndBulkDeleteDialog(false);
       setSelectedIndIds(new Set());
       toast.success(`Deleted ${result.deletedCount} indicators`);
