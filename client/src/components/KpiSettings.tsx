@@ -234,10 +234,73 @@ export function KpiSettings() {
                   No departments yet. Create one to get started.
                 </p>
               ) : (
-                <BulkDepartmentOps
-                  departments={departments}
-                  onRefresh={() => utils.departments.list.invalidate()}
-                />
+                <div className="space-y-4">
+                  {selectedDepts.size > 0 && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-center">
+                      <span className="text-sm font-medium">{selectedDepts.size} selected</span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteDeptId(-1)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Selected
+                      </Button>
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {departments.map((dept: Department) => (
+                      <div
+                        key={dept.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedDepts.has(dept.id)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedDepts);
+                              if (e.target.checked) {
+                                newSelected.add(dept.id);
+                              } else {
+                                newSelected.delete(dept.id);
+                              }
+                              setSelectedDepts(newSelected);
+                            }}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: dept.color || "#3B82F6" }}
+                          />
+                          <div>
+                            <h4 className="font-medium">{dept.name}</h4>
+                            {dept.description && (
+                              <p className="text-sm text-muted-foreground">{dept.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeptEdit(dept)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => setDeleteDeptId(dept.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

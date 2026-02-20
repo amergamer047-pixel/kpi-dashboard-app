@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const [editingDept, setEditingDept] = useState<any>(null);
   const [deptForm, setDeptForm] = useState({ name: "", description: "", color: "#3B82F6" });
   const [deptToDelete, setDeptToDelete] = useState<number | null>(null);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   // Set first department as selected by default
   useEffect(() => {
@@ -88,6 +89,15 @@ export default function SettingsPage() {
       toast.success("Department deleted successfully");
     },
     onError: (err) => toast.error("Failed to delete department"),
+  });
+
+  const bulkDeleteDepts = trpc.departments.bulkDelete.useMutation({
+    onSuccess: (result) => {
+      utils.departments.list.invalidate();
+      setShowBulkDeleteDialog(false);
+      toast.success(`Deleted ${result.deletedCount} departments`);
+    },
+    onError: (err) => toast.error("Failed to delete departments"),
   });
 
   const handleDeptSave = () => {
@@ -306,16 +316,25 @@ export default function SettingsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Manage Departments</CardTitle>
-                <Button
-                  onClick={() => {
-                    setEditingDept(null);
-                    setDeptForm({ name: "", description: "", color: "#3B82F6" });
-                    setShowDeptDialog(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Department
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkDeleteDialog(true)}
+                  >
+                    Delete All
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setEditingDept(null);
+                      setDeptForm({ name: "", description: "", color: "#3B82F6" });
+                      setShowDeptDialog(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Department
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {deptLoading ? (
@@ -769,6 +788,27 @@ export default function SettingsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete All Departments?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will delete all departments and all associated data. This action cannot be undone.
+          </AlertDialogDescription>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const deptIds = departments.map((d: any) => d.id);
+                bulkDeleteDepts.mutate({ ids: deptIds });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
