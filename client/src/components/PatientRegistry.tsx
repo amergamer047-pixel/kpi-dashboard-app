@@ -297,20 +297,20 @@ export function PatientRegistry() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Patient Registry</CardTitle>
+    <div className="space-y-4 sm:space-y-6">
+      <Card className="w-full">
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Patient Registry</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6">
           {/* Filters Section */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm">Filters</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="font-semibold text-xs sm:text-sm">Filters</h3>
             
             {/* Search Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hospitalId" className="text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="hospitalId" className="text-xs sm:text-sm">
                   Search Hospital ID
                 </Label>
                 <Input
@@ -318,10 +318,11 @@ export function PatientRegistry() {
                   placeholder="e.g., PT-2026-001"
                   value={searchHospitalId}
                   onChange={(e) => setSearchHospitalId(e.target.value)}
+                  className="text-xs sm:text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="patientName" className="text-sm">
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="patientName" className="text-xs sm:text-sm">
                   Search Patient Name
                 </Label>
                 <Input
@@ -329,12 +330,13 @@ export function PatientRegistry() {
                   placeholder="e.g., John Doe"
                   value={searchPatientName}
                   onChange={(e) => setSearchPatientName(e.target.value)}
+                  className="text-xs sm:text-sm"
                 />
               </div>
             </div>
 
             {/* Dropdown Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="year" className="text-sm">
                   Year
@@ -436,11 +438,11 @@ export function PatientRegistry() {
           </div>
 
           {/* Results Summary */}
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             Showing <span className="font-semibold">{filteredCases.length}</span> patient case{filteredCases.length !== 1 ? "s" : ""}
           </div>
           {/* Table */}
-          <div className="overflow-x-auto border rounded-lg">
+          <div className="overflow-x-auto border rounded-lg w-full">
             {filteredCases.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 No patient cases found. Try adjusting your filters.

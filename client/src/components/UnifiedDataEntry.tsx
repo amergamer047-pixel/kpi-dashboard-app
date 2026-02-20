@@ -240,38 +240,38 @@ export default function UnifiedDataEntry({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3 sm:space-y-4">
         {categories.map((category: any) => (
-          <Card key={category.id}>
+          <Card key={category.id} className="w-full">
             <CardHeader
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              className="cursor-pointer hover:bg-muted/50 transition-colors p-3 sm:p-6"
               onClick={() => toggleCategory(category.id)}
             >
               <div className="flex items-center gap-2">
                 {expandedCategories.has(category.id) ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 flex-shrink-0" />
                 )}
-                <CardTitle className="text-base">{category.name}</CardTitle>
+                <CardTitle className="text-sm sm:text-base">{category.name}</CardTitle>
               </div>
             </CardHeader>
 
             {expandedCategories.has(category.id) && (
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6">
                 {(indicatorsByCategory[category.id] || []).length > 0 ? (
                   (indicatorsByCategory[category.id] || []).map((indicator: any) => (
-                    <div key={indicator.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm">{indicator.name}</h4>
-                        <span className="text-xs text-gray-500">
+                    <div key={indicator.id} className="border rounded-lg p-3 sm:p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <h4 className="font-semibold text-xs sm:text-sm">{indicator.name}</h4>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
                           {indicator.requiresPatientInfo ? "Patient Tracking" : "Direct Entry"}
                         </span>
                       </div>
 
-                      {/* Month columns */}
-                      <div className="grid grid-cols-3 gap-3">
+                      {/* Month columns - responsive grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 overflow-x-auto">
                         {MONTHS.filter((m) => quarterMonths.includes(m.value)).map((month) => {
                           const monthlyValue = getMonthlyValue(indicator.id, month.value);
                           const patientCount = getPatientCount(indicator.id, month.value);

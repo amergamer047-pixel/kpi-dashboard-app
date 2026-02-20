@@ -518,17 +518,17 @@ export default function InteractiveDashboard() {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               {chartData.length > 0 && (
                 <>
                   {/* Category Summary Chart */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Category Summary ({chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart)</CardTitle>
+                  <Card className="w-full">
+                    <CardHeader className="pb-2 sm:pb-4">
+                      <CardTitle className="text-sm sm:text-base md:text-lg">Category Summary ({chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart)</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-2 sm:p-4">
                       {chartType === "bar" && (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={Math.max(250, window.innerHeight * 0.3)}>
                           <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
@@ -543,7 +543,7 @@ export default function InteractiveDashboard() {
                         </ResponsiveContainer>
                       )}
                       {chartType === "pie" && (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={Math.max(250, window.innerHeight * 0.3)}>
                           <PieChart>
                             <Pie
                               data={chartData}
@@ -564,7 +564,7 @@ export default function InteractiveDashboard() {
                         </ResponsiveContainer>
                       )}
                       {chartType === "line" && (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={Math.max(250, window.innerHeight * 0.3)}>
                           <LineChart data={monthlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />
@@ -582,7 +582,7 @@ export default function InteractiveDashboard() {
                         </ResponsiveContainer>
                       )}
                       {chartType === "area" && (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={Math.max(250, window.innerHeight * 0.3)}>
                           <AreaChart data={monthlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />
@@ -603,12 +603,12 @@ export default function InteractiveDashboard() {
                   </Card>
 
                   {/* Monthly Trend */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Monthly Trend</CardTitle>
+                  <Card className="w-full">
+                    <CardHeader className="pb-2 sm:pb-4">
+                      <CardTitle className="text-sm sm:text-base md:text-lg">Monthly Trend</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
+                    <CardContent className="p-2 sm:p-4">
+                      <ResponsiveContainer width="100%" height={Math.max(250, window.innerHeight * 0.3)}>
                         <LineChart data={monthlyChartData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" />
@@ -628,13 +628,13 @@ export default function InteractiveDashboard() {
                   </Card>
 
                   {/* Indicator Comparison Chart */}
-                  <Card className="lg:col-span-2">
-                    <CardHeader>
-                      <CardTitle>
+                  <Card className="w-full lg:col-span-2">
+                    <CardHeader className="pb-2 sm:pb-4">
+                      <CardTitle className="text-sm sm:text-base md:text-lg">
                         Indicator Comparison - {selectedCategory ? categories.find((c: any) => c.id === selectedCategory)?.name : "All Categories"} ({viewMode === "quarterly" ? `Q${selectedQuarter}` : "Year"})
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-2 sm:p-4 overflow-x-auto">
                       {(() => {
                         const categoryId = selectedCategory;
                         const filteredIndicators = categoryId 
@@ -672,7 +672,7 @@ export default function InteractiveDashboard() {
 
                         if (chartType === "bar") {
                           return (
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
                               <BarChart data={indicatorData}>
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
@@ -689,7 +689,7 @@ export default function InteractiveDashboard() {
                         }
                         if (chartType === "pie") {
                           return (
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
                               <PieChart>
                                 <Pie data={indicatorData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
                                   {indicatorData.map((item: any, i: number) => (
@@ -704,7 +704,7 @@ export default function InteractiveDashboard() {
                         }
                         if (chartType === "line") {
                           return (
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
                               <LineChart data={indicatorData}>
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
@@ -718,7 +718,7 @@ export default function InteractiveDashboard() {
                           );
                         }
                         return (
-                          <ResponsiveContainer width="100%" height={400}>
+                          <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
                             <AreaChart data={indicatorData}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
