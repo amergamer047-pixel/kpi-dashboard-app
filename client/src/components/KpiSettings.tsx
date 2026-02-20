@@ -22,12 +22,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { BulkDepartmentOps } from "./BulkDepartmentOps";
 
 interface Department {
   id: number;
   name: string;
   description: string | null;
   color: string | null;
+  isFrozen?: number | null;
 }
 
 interface Category {
@@ -58,6 +60,8 @@ export function KpiSettings() {
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [deptForm, setDeptForm] = useState({ name: "", description: "", color: "#3B82F6" });
   const [deleteDeptId, setDeleteDeptId] = useState<number | null>(null);
+  const [selectedDepts, setSelectedDepts] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
   // Categories
   const { data: categories = [] } = trpc.categories.list.useQuery();
@@ -230,44 +234,10 @@ export function KpiSettings() {
                   No departments yet. Create one to get started.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {departments.map((dept: Department) => (
-                    <div
-                      key={dept.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: dept.color || "#3B82F6" }}
-                        />
-                        <div>
-                          <h4 className="font-medium">{dept.name}</h4>
-                          {dept.description && (
-                            <p className="text-sm text-muted-foreground">{dept.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeptEdit(dept)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => setDeleteDeptId(dept.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <BulkDepartmentOps
+                  departments={departments}
+                  onRefresh={() => utils.departments.list.invalidate()}
+                />
               )}
             </CardContent>
           </Card>

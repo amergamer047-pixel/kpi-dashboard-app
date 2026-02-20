@@ -27,6 +27,7 @@ export const departments = mysqlTable("departments", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   color: varchar("color", { length: 7 }).default("#3B82F6"),
+  isFrozen: int("isFrozen").default(0), // 0 = active, 1 = frozen (read-only)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

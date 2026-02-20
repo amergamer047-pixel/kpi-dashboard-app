@@ -436,3 +436,39 @@ export async function getPatientCasesWithDetails(userId: number) {
   
   return cases;
 }
+
+export async function freezeDepartment(id: number, isFrozen: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(departments).set({ isFrozen: isFrozen ? 1 : 0 }).where(eq(departments.id, id));
+  return { id, isFrozen };
+}
+
+export async function bulkDeleteDepartments(ids: number[], userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  if (ids.length === 0) return { success: true, deletedCount: 0 };
+  
+  // Delete related data for all departments
+  for (const id of ids) {
+    await db.delete(monthlyKpiData).where(and(eq(monthlyKpiData.departmentId, id), eq(monthlyKpiData.userId, userId)));
+    await db.delete(patientCases).where(and(eq(patientCases.departmentId, id), eq(patientCases.userId, userId)));
+    await db.delete(quarterlyReports).where(and(eq(quarterlyReports.departmentId, id), eq(quarterlyReports.userId, userId)));
+  }
+  
+  // Delete all departments
+  const placeholders = ids.map(() => "?").join(",");
+  await db.delete(departments).where(and(eq(departments.userId, userId), sql`${departments.id} IN (${sql.raw(ids.join(","))})`));
+  return { success: true, deletedCount: ids.length };
+}
+
+export async function bulkFreezeDepartments(ids: number[], isFrozen: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  if (ids.length === 0) return { success: true, updatedCount: 0, isFrozen };
+  
+  await db.update(departments).set({ isFrozen: isFrozen ? 1 : 0 }).where(sql`${departments.id} IN (${sql.raw(ids.join(","))})`);
+  return { success: true, updatedCount: ids.length, isFrozen };
+}

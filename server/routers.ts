@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
   getDepartments, createDepartment, updateDepartment, deleteDepartment,
+  freezeDepartment, bulkDeleteDepartments, bulkFreezeDepartments,
   getKpiCategories, createKpiCategory, updateKpiCategory, deleteKpiCategory,
   getKpiIndicators, createKpiIndicator, updateKpiIndicator, deleteKpiIndicator,
   getMonthlyKpiData, upsertMonthlyKpiData,
@@ -57,6 +58,32 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         return deleteDepartment(input.id, ctx.user.id);
+      }),
+    
+    freeze: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        isFrozen: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return freezeDepartment(input.id, input.isFrozen);
+      }),
+    
+    bulkDelete: protectedProcedure
+      .input(z.object({
+        ids: z.array(z.number()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return bulkDeleteDepartments(input.ids, ctx.user.id);
+      }),
+    
+    bulkFreeze: protectedProcedure
+      .input(z.object({
+        ids: z.array(z.number()),
+        isFrozen: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return bulkFreezeDepartments(input.ids, input.isFrozen);
       }),
   }),
 
