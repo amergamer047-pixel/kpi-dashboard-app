@@ -727,7 +727,7 @@ export default function SettingsPage() {
       </Dialog>
 
       {/* DELETE DIALOGS */}
-      <AlertDialog open={deptToDelete !== null} onOpenChange={() => setDeptToDelete(null)}>
+      <AlertDialog open={deptToDelete !== null} onOpenChange={(open) => { if (!open && !deleteDept.isPending) setDeptToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete Department?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -741,15 +741,16 @@ export default function SettingsPage() {
                   deleteDept.mutate({ id: deptToDelete });
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteDept.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
-              Delete
+              {deleteDept.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={catToDelete !== null} onOpenChange={() => setCatToDelete(null)}>
+      <AlertDialog open={catToDelete !== null} onOpenChange={(open) => { if (!open && !deleteCat.isPending) setCatToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete Category?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -763,15 +764,16 @@ export default function SettingsPage() {
                   deleteCat.mutate({ id: catToDelete });
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteCat.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
-              Delete
+              {deleteCat.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={indToDelete !== null} onOpenChange={() => setIndToDelete(null)}>
+      <AlertDialog open={indToDelete !== null} onOpenChange={(open) => { if (!open && !deleteInd.isPending) setIndToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogTitle>Delete Indicator?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -785,9 +787,10 @@ export default function SettingsPage() {
                   deleteInd.mutate({ id: indToDelete });
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteInd.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
-              Delete
+              {deleteInd.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

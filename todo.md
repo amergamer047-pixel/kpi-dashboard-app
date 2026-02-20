@@ -223,6 +223,15 @@
 - [x] Edit/delete buttons rendering correctly with pencil and trash icons
 
 
+## CRITICAL BUG FIX: Department Deletion Not Working - COMPLETE
+- [x] Fixed department deletion dialog not updating UI after deletion
+- [x] Added isPending check to prevent dialog from closing before mutation completes
+- [x] Fixed category deletion dialog with same isPending logic
+- [x] Fixed indicator deletion dialog with same isPending logic
+- [x] Added "Deleting..." state to delete buttons during mutation
+- [x] Verified all deletions now properly update the UI and remove items from list
+- [x] All 39 tests passing including department deletion test
+
 ## Current Tasks - Users Removal and Edit/Delete Integration
 - [x] Remove Users tab from InteractiveDashboard navigation
 - [x] Remove UsersPage.tsx component file
@@ -949,3 +958,12 @@ The PublicDashboard component had two issues:
 - [x] Test color palette switching - all 16 palettes working
 - [x] Verify all API endpoints return correct data - confirmed
 - [x] All 39 tests passing
+
+
+## CRITICAL BUG: Department Deletion Not Working
+- [ ] Department delete shows notification but doesn't remove from UI
+- [ ] Investigate delete mutation response
+- [ ] Check if mutation is invalidating cache properly
+- [ ] Fix UI refresh after deletion
+- [ ] Test all deletion scenarios (single, multiple, bulk)
+- [ ] Verify database actually deletes the records
