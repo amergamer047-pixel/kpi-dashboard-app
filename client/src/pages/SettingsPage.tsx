@@ -296,15 +296,15 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">KPI Configuration</h1>
-          <p className="text-muted-foreground mt-2">Manage departments, categories, and KPI indicators</p>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">KPI Configuration</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">Manage departments, categories, and KPI indicators</p>
         </div>
 
         <Tabs defaultValue="departments" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4 sm:mb-6 gap-1 sm:gap-2">
             <TabsTrigger value="departments">Departments</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="indicators">Indicators</TabsTrigger>
@@ -314,9 +314,9 @@ export default function SettingsPage() {
           {/* DEPARTMENTS TAB */}
           <TabsContent value="departments">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Manage Departments</CardTitle>
-                <div className="flex gap-2">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+                <CardTitle className="text-lg sm:text-xl">Manage Departments</CardTitle>
+                <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"

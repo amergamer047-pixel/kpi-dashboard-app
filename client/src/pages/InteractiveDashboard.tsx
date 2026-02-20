@@ -351,18 +351,20 @@ export default function InteractiveDashboard() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">Healthcare KPI Dashboard</h1>
-              <p className="text-gray-600 mt-2">Monitor and track key performance indicators across departments</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
+            <div className="w-full sm:flex-1">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Healthcare KPI Dashboard</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">Monitor and track key performance indicators across departments</p>
             </div>
-            <DepartmentWizard />
+            <div className="w-full sm:w-auto">
+              <DepartmentWizard />
+            </div>
           </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-6 sm:mb-8">
           <div>
-            <Label>Department</Label>
+            <Label className="text-xs sm:text-sm">Department</Label>
             <Select value={selectedDepartmentId?.toString() || ""} onValueChange={(v) => setSelectedDepartmentId(parseInt(v))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select department" />
@@ -378,7 +380,7 @@ export default function InteractiveDashboard() {
           </div>
 
           <div>
-            <Label>Year</Label>
+            <Label className="text-xs sm:text-sm">Year</Label>
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
               <SelectTrigger>
                 <SelectValue />
@@ -394,7 +396,7 @@ export default function InteractiveDashboard() {
           </div>
 
           <div>
-            <Label>View Mode</Label>
+            <Label className="text-xs sm:text-sm">View Mode</Label>
             <Select value={viewMode} onValueChange={(v: any) => setViewMode(v)}>
               <SelectTrigger>
                 <SelectValue />
@@ -407,7 +409,7 @@ export default function InteractiveDashboard() {
           </div>
           {viewMode === "quarterly" && (
             <div>
-              <Label>Quarter</Label>
+              <Label className="text-xs sm:text-sm">Quarter</Label>
               <Select value={selectedQuarter.toString()} onValueChange={(v) => setSelectedQuarter(parseInt(v))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -436,61 +438,60 @@ export default function InteractiveDashboard() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              <Card className="p-2 sm:p-4">
+                <CardHeader className="pb-1 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Departments</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{departments.length}</div>
+                <CardContent className="p-0">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold">{departments.length}</div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+              <Card className="p-2 sm:p-4">
+                <CardHeader className="pb-1 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Categories</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{categories.length}</div>
+                <CardContent className="p-0">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold">{categories.length}</div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Indicators</CardTitle>
+              <Card className="p-2 sm:p-4">
+                <CardHeader className="pb-1 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Indicators</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{indicators.length}</div>
+                <CardContent className="p-0">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold">{indicators.length}</div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Cases ({viewMode === "quarterly" ? `Q${selectedQuarter}` : "Year"})</CardTitle>
+              <Card className="p-2 sm:p-4">
+                <CardHeader className="pb-1 sm:pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Cases ({viewMode === "quarterly" ? `Q${selectedQuarter}` : "Year"})</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{Object.values(summaryStats).reduce((a, b) => a + b, 0)}</div>
+                <CardContent className="p-0">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold">{Object.values(summaryStats).reduce((a, b) => a + b, 0)}</div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Chart Type Selector & Customization */}
-            <div className="flex gap-4 flex-wrap items-center">
-              <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap items-start sm:items-center">
+              <div className="flex gap-1 sm:gap-2 flex-wrap w-full sm:w-auto">
                 {(["bar", "pie", "line", "area"] as ChartType[]).map((type) => (
                   <Button
                     key={type}
                     variant={chartType === type ? "default" : "outline"}
                     onClick={() => setChartType(type)}
-                    className="capitalize"
+                    className="capitalize text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-3"
+                    size="sm"
                   >
                     {type} Chart
                   </Button>
                 ))}
               </div>
-              
 
-              
               {/* Category Filter */}
-              <div className="flex-1 min-w-[200px]">
-                <Label>Filter by Category</Label>
+              <div className="w-full sm:flex-1 sm:min-w-[200px]">
+                <Label className="text-xs sm:text-sm">Filter by Category</Label>
                 <Select 
                   value={selectedCategory?.toString() || "all"} 
                   onValueChange={(v) => setSelectedCategory(v === "all" ? null : parseInt(v))}
@@ -511,7 +512,7 @@ export default function InteractiveDashboard() {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               {chartData.length > 0 && (
                 <>
                   {/* Category Summary Chart */}
