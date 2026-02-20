@@ -684,3 +684,119 @@ Key improvements:
 - ✅ Patient Registry with Hospital ID and Name display
 - ✅ Zero TypeScript errors
 - ✅ Zero console errors
+
+
+## FEATURE: Bulk Delete with Checkboxes - IN PROGRESS
+
+### Phase 1: Architecture & UI/UX Design
+- [ ] Design checkbox UI for Categories list
+- [ ] Design checkbox UI for Indicators list
+- [ ] Design "Select All" checkbox for bulk selection
+- [ ] Design bulk delete button with count display
+- [ ] Design confirmation dialog for bulk delete
+- [ ] Plan state management for checkbox selections
+- [ ] Plan API endpoints for bulk delete operations
+
+### Phase 2: Backend Implementation
+- [ ] Add bulkDeleteCategories procedure to db.ts
+- [ ] Add bulkDeleteIndicators procedure to db.ts
+- [ ] Create tRPC mutations for bulk delete categories
+- [ ] Create tRPC mutations for bulk delete indicators
+- [ ] Add proper error handling and validation
+- [ ] Test backend procedures with multiple IDs
+
+### Phase 3: Frontend Checkbox Implementation
+- [ ] Add checkbox state management to SettingsPage
+- [ ] Implement checkbox rendering for each category
+- [ ] Implement checkbox rendering for each indicator
+- [ ] Add "Select All" checkbox functionality
+- [ ] Add visual feedback for selected items (highlight/background)
+- [ ] Implement selection count display
+- [ ] Handle checkbox change events
+
+### Phase 4: Bulk Delete UI & Interactions
+- [ ] Add bulk delete button that appears when items selected
+- [ ] Implement confirmation dialog for bulk delete
+- [ ] Show count of items to be deleted
+- [ ] Add cancel option in confirmation dialog
+- [ ] Implement delete action with loading state
+- [ ] Show success/error toast notifications
+- [ ] Refresh data after successful bulk delete
+- [ ] Clear selections after bulk delete
+
+### Phase 5: Testing & Bug Fixes
+- [ ] Test checkbox selection/deselection
+- [ ] Test "Select All" functionality
+- [ ] Test bulk delete with single item
+- [ ] Test bulk delete with multiple items
+- [ ] Test bulk delete with all items
+- [ ] Test confirmation dialog appearance
+- [ ] Test cancel operation
+- [ ] Test error handling
+- [ ] Test on mobile/tablet/desktop
+- [ ] Verify data consistency after bulk delete
+- [ ] Test keyboard accessibility
+- [ ] Fix any bugs found during testing
+
+
+## FEATURE: Bulk Delete with Checkboxes - COMPLETE ✅
+
+### Categories Tab
+- [x] Checkbox for each category
+- [x] Select All checkbox
+- [x] Delete Selected button (appears only when items are selected)
+- [x] Confirmation dialog with count of items to delete
+- [x] Bulk delete functionality working correctly
+- [x] Selection counter showing number of selected items
+- [x] Visual feedback for selected items (blue highlight)
+- [x] Backend bulk delete mutation implemented
+- [x] Cascade delete warning for associated indicators
+- [x] Selection cleared after successful deletion
+- [x] Toast notification showing number of deleted items
+
+### Indicators Tab
+- [x] Checkbox for each indicator
+- [x] Select All checkbox
+- [x] Delete Selected button (appears only when items are selected)
+- [x] Confirmation dialog with count of items to delete
+- [x] Bulk delete functionality working correctly
+- [x] Selection counter showing number of selected items
+- [x] Visual feedback for selected items (blue highlight)
+- [x] Backend bulk delete mutation implemented
+- [x] Selection cleared after successful deletion
+- [x] Toast notification showing number of deleted items
+- [x] Patient Tracking badge displayed for indicators with patient tracking
+
+### UI/UX Improvements
+- [x] Checkboxes render with proper styling and accessibility
+- [x] Select All checkbox toggles all items on/off
+- [x] Delete Selected button only shows when items are selected
+- [x] Selection counter displays next to Select All checkbox
+- [x] Confirmation dialog prevents accidental deletion
+- [x] Selected items highlighted with blue background
+- [x] Smooth transitions and visual feedback
+- [x] Works on desktop, tablet, and mobile devices
+- [x] Responsive button layout for small screens
+
+### Backend Implementation
+- [x] bulkDeleteCategories function in db.ts
+- [x] bulkDeleteIndicators function in db.ts
+- [x] categories.bulkDelete mutation in routers.ts
+- [x] indicators.bulkDelete mutation in routers.ts
+- [x] Proper error handling and validation
+- [x] Database transactions for data consistency
+- [x] Returns deleted count in response
+
+### Testing & Verification
+- [x] Tested checkbox selection on Categories tab
+- [x] Tested checkbox selection on Indicators tab
+- [x] Tested Select All functionality
+- [x] Verified Delete Selected button appears/disappears correctly
+- [x] Verified selection counter updates correctly
+- [x] Tested visual feedback for selected items
+- [x] Verified confirmation dialogs work
+- [x] Tested bulk delete operations
+- [x] Verified data is properly deleted from database
+- [x] Tested with various selection counts
+- [x] Verified no console errors
+- [x] Tested responsive design on mobile/tablet/desktop

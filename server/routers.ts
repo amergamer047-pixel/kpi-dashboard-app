@@ -6,8 +6,8 @@ import { z } from "zod";
 import {
   getDepartments, createDepartment, updateDepartment, deleteDepartment,
   freezeDepartment, bulkDeleteDepartments, bulkFreezeDepartments,
-  getKpiCategories, createKpiCategory, updateKpiCategory, deleteKpiCategory,
-  getKpiIndicators, createKpiIndicator, updateKpiIndicator, deleteKpiIndicator,
+  getKpiCategories, createKpiCategory, updateKpiCategory, deleteKpiCategory, bulkDeleteKpiCategories,
+  getKpiIndicators, createKpiIndicator, updateKpiIndicator, deleteKpiIndicator, bulkDeleteKpiIndicators,
   getMonthlyKpiData, upsertMonthlyKpiData,
   getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
   getQuarterlySummary, initializeSystemData, getDb
@@ -132,6 +132,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return deleteKpiCategory(input.id, ctx.user.id);
       }),
+    
+    bulkDelete: protectedProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        return bulkDeleteKpiCategories(input.ids, ctx.user.id);
+      }),
   }),
 
   // KPI Indicator routes
@@ -184,6 +190,12 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         return deleteKpiIndicator(input.id, ctx.user.id);
+      }),
+    
+    bulkDelete: protectedProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        return bulkDeleteKpiIndicators(input.ids, ctx.user.id);
       }),
   }),
 
