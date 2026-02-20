@@ -551,3 +551,79 @@ The handleCellClick function was checking if indicator.requiresPatientInfo and o
 - Category colors update automatically when palette is changed
 - Persistent color mapping stored in localStorage
 - All 34 tests passing with zero errors
+
+
+## AUDIT: Comprehensive Website Functionality Audit - IN PROGRESS
+
+### Overview Tab
+- [ ] Dashboard loads without errors
+- [ ] Summary statistics display correctly (Total Departments, Categories, Indicators, Cases)
+- [ ] Department filter works and updates data
+- [ ] Year filter works correctly
+- [ ] View Mode (Quarterly/Yearly) toggles properly
+- [ ] Quarter selector appears/disappears based on view mode
+- [ ] Chart type buttons (Bar, Pie, Line, Area) switch charts
+- [ ] Category filter updates chart data
+- [ ] All chart types render without errors
+- [ ] Charts display data correctly for selected filters
+
+### Data Entry Tab
+- [ ] All categories display (including Renal Dialysis)
+- [ ] Monthly data entry form works
+- [ ] Patient case entry form works
+- [ ] Edit functionality for monthly data
+- [ ] Delete functionality for monthly data
+- [ ] Edit functionality for patient cases
+- [ ] Delete functionality for patient cases
+- [ ] Data validation prevents invalid entries
+- [ ] Success/error notifications display
+- [ ] Data persists after page reload
+
+### Patient Registry Tab
+- [ ] Patient cases display correctly
+- [ ] Filter by department works
+- [ ] Filter by indicator works
+- [ ] Filter by date range works
+- [ ] Patient data shows all required fields
+- [ ] Delete patient case functionality works
+- [ ] Pagination works if applicable
+- [ ] Search functionality works if available
+
+### Settings Tab
+- [ ] Departments tab displays all departments
+- [ ] Add department functionality works
+- [ ] Edit department functionality works
+- [ ] Delete department functionality works
+- [ ] Categories tab displays all categories
+- [ ] Add category functionality works
+- [ ] Edit category functionality works
+- [ ] Delete category functionality works
+- [ ] Patient tracking toggle works
+- [ ] Indicators tab displays all indicators
+- [ ] Add indicator functionality works
+- [ ] Edit indicator functionality works
+- [ ] Delete indicator functionality works
+- [ ] Appearance tab displays color palettes
+- [ ] Color palette selection works
+- [ ] Selected palette applies to charts
+
+### Color Palette System
+- [ ] All 16 color palettes display correctly
+- [ ] Color palette preview shows correct colors
+- [ ] Palette selection persists on page reload
+- [ ] Indicator colors remain consistent across charts
+- [ ] Category colors remain consistent across charts
+- [ ] Palette change updates all charts immediately
+- [ ] Colorblind-friendly badges display correctly
+- [ ] Hex color values display for each palette
+
+### Data Persistence & Edge Cases
+- [ ] Data persists after page reload
+- [ ] Color palette selection persists
+- [ ] Filters maintain state during session
+- [ ] Empty state messages display appropriately
+- [ ] Error handling for failed operations
+- [ ] Loading states display during data fetch
+- [ ] No console errors or warnings
+- [ ] Responsive design works on mobile/tablet
+- [ ] All buttons and inputs are accessible

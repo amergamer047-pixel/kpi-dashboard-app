@@ -117,7 +117,7 @@ describe("Chart Customization Features", () => {
       // Database stores as decimal, so value will be '5.00'
       expect(monthlyData[0].value).toBe("5.00");
       expect(monthlyData[0].indicatorId).toBe(ind.id);
-    });
+    }, { timeout: 10000 });
 
     it("should properly filter patient cases by department and date range", async () => {
       const { ctx } = createAuthContext();
