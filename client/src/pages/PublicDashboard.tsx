@@ -18,13 +18,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { RefreshCw, Users } from "lucide-react";
-
-interface ConnectedUser {
-  userId: string;
-  userName: string;
-  lastActivity: string;
-}
+import { RefreshCw, Users, TrendingUp } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface Activity {
   id: string;
@@ -36,13 +31,30 @@ interface Activity {
   timestamp: string;
 }
 
+const COLORS = [
+  "#3b82f6",
+  "#ef4444",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316",
+];
+
 export default function PublicDashboard() {
-  const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [chartData, setChartData] = useState<any[]>([]);
 
-  // Simulate real-time activity tracking
+  // Fetch real data from database using public procedures (no auth required)
+  const { data: departments = [] } = trpc.public.departments.useQuery();
+  const { data: categories = [] } = trpc.public.categories.useQuery();
+  const { data: indicators = [] } = trpc.public.indicators.useQuery();
+  const { data: monthlyData = [] } = trpc.public.monthlyData.useQuery();
+
+  // Load activities from localStorage
   useEffect(() => {
     const loadActivities = () => {
       try {
@@ -80,10 +92,47 @@ export default function PublicDashboard() {
     };
   }, [autoRefresh]);
 
+  // Generate chart data from monthly data
+  useEffect(() => {
+    if (monthlyData && monthlyData.length > 0) {
+      // Group by month
+      const grouped: Record<string, number> = {};
+      monthlyData.forEach((item: any) => {
+        const month = new Date(item.month).toLocaleString("default", {
+          month: "short",
+        });
+        grouped[month] = (grouped[month] || 0) + (item.value || 0);
+      });
+
+      const data = Object.entries(grouped).map(([month, value]) => ({
+        name: month,
+        value: value,
+      }));
+
+      setChartData(data.length > 0 ? data : getDefaultChartData());
+    } else {
+      setChartData(getDefaultChartData());
+    }
+  }, [monthlyData]);
+
+  const getDefaultChartData = () => [
+    { name: "Jan", value: 0 },
+    { name: "Feb", value: 0 },
+    { name: "Mar", value: 0 },
+    { name: "Apr", value: 0 },
+    { name: "May", value: 0 },
+    { name: "Jun", value: 0 },
+  ];
+
   const handleManualRefresh = () => {
     setLastRefresh(new Date());
     window.location.reload();
   };
+
+  const departmentCount = departments.length;
+  const categoryCount = categories.length;
+  const indicatorCount = indicators.length;
+  const totalCases = monthlyData.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
@@ -136,6 +185,65 @@ export default function PublicDashboard() {
           </CardContent>
         </Card>
 
+        {/* KPI Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Departments</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {departmentCount}
+                  </p>
+                </div>
+                <div className="text-blue-200 text-4xl">📊</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Categories</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {categoryCount}
+                  </p>
+                </div>
+                <div className="text-green-200 text-4xl">📁</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Indicators</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {indicatorCount}
+                  </p>
+                </div>
+                <div className="text-purple-200 text-4xl">📈</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Entries</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {totalCases}
+                  </p>
+                </div>
+                <div className="text-orange-200 text-4xl">📋</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
@@ -144,7 +252,7 @@ export default function PublicDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+                  <TrendingUp className="w-5 h-5" />
                   Recent Activity
                 </CardTitle>
               </CardHeader>
@@ -191,24 +299,15 @@ export default function PublicDashboard() {
               </CardContent>
             </Card>
 
-            {/* Sample Chart */}
+            {/* KPI Trends Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>KPI Trends</CardTitle>
+                <CardTitle>KPI Trends (Monthly)</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="w-full h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={[
-                        { name: "Jan", value: 45 },
-                        { name: "Feb", value: 52 },
-                        { name: "Mar", value: 48 },
-                        { name: "Apr", value: 61 },
-                        { name: "May", value: 55 },
-                        { name: "Jun", value: 67 },
-                      ]}
-                    >
+                    <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -219,68 +318,92 @@ export default function PublicDashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Departments Overview */}
+            {departments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Departments Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {departments.map((dept: any) => (
+                      <div
+                        key={dept.id}
+                        className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-200"
+                      >
+                        <span className="font-medium text-gray-900">
+                          {dept.name}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {indicators.filter((i: any) => i.departmentId === dept.id)
+                            .length || 0}{" "}
+                          indicators
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* Connected Users */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Viewing Now
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {connectedUsers.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">
-                      No users currently viewing
-                    </p>
-                  ) : (
-                    connectedUsers.map((user, idx) => (
+            {/* Categories List */}
+            {categories.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Categories
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {categories.slice(0, 5).map((cat: any) => (
                       <div
-                        key={idx}
-                        className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200"
+                        key={cat.id}
+                        className="flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200"
                       >
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {user.userName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(user.lastActivity).toLocaleTimeString()}
-                          </p>
-                        </div>
+                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {cat.name}
+                        </span>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                    {categories.length > 5 && (
+                      <p className="text-xs text-gray-500 text-center pt-2">
+                        +{categories.length - 5} more
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Stats */}
+            {/* Dashboard Stats */}
             <Card>
               <CardHeader>
-                <CardTitle>Dashboard Stats</CardTitle>
+                <CardTitle>Dashboard Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
-                  <span className="text-gray-700">Total Activities</span>
-                  <span className="text-2xl font-bold text-blue-600">
+                  <span className="text-gray-700 text-sm">Activities</span>
+                  <span className="text-xl font-bold text-blue-600">
                     {recentActivities.length}
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-green-50 rounded">
-                  <span className="text-gray-700">Active Users</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    {connectedUsers.length}
+                  <span className="text-gray-700 text-sm">Status</span>
+                  <span className="text-sm font-semibold text-green-600">
+                    ● Live
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
-                  <span className="text-gray-700">Status</span>
-                  <span className="text-sm font-semibold text-green-600">
-                    ● Live
+                  <span className="text-gray-700 text-sm">Last Update</span>
+                  <span className="text-xs font-semibold text-purple-600">
+                    {lastRefresh.toLocaleTimeString()}
                   </span>
                 </div>
               </CardContent>
@@ -292,7 +415,7 @@ export default function PublicDashboard() {
         <div className="mt-12 text-center text-gray-600 text-sm">
           <p>© 2026 Healthcare KPI Dashboard. All rights reserved.</p>
           <p className="mt-2">
-            This is a public dashboard. Changes are visible to all users in real-time.
+            This is a public dashboard. All changes are visible to everyone in real-time.
           </p>
         </div>
       </div>
