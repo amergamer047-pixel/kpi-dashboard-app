@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, Plus, Edit, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useState, useMemo } from "react";
 
 
 interface UnifiedDataEntryProps {
@@ -40,10 +41,21 @@ export default function UnifiedDataEntry({
   const [monthlyDataDialogOpen, setMonthlyDataDialogOpen] = useState(false);
   const [monthlyDataValue, setMonthlyDataValue] = useState("");
   const [monthlyDataNotes, setMonthlyDataNotes] = useState("");
+  const [patientDialogOpen, setPatientDialogOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
+  const [patientHospitalId, setPatientHospitalId] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [patientNotes, setPatientNotes] = useState("");
 
   // Queries
-  const { data: categories = [] } = trpc.categories.list.useQuery();
-  const { data: indicators = [] } = trpc.indicators.list.useQuery();
+  const { data: categories = [] } = trpc.categories.list.useQuery(
+    selectedDepartmentId ? { departmentId: selectedDepartmentId } : undefined,
+    { enabled: !!selectedDepartmentId }
+  );
+  const { data: indicators = [] } = trpc.indicators.list.useQuery(
+    selectedDepartmentId ? { departmentId: selectedDepartmentId } : undefined,
+    { enabled: !!selectedDepartmentId }
+  );
   const { data: monthlyData = [], refetch: refetchMonthlyData } = trpc.monthlyData.get.useQuery(
     selectedDepartmentId && selectedYear && selectedQuarter
       ? { departmentId: selectedDepartmentId, year: selectedYear, quarter: selectedQuarter }
@@ -77,6 +89,17 @@ export default function UnifiedDataEntry({
   const deletePatientMutation = trpc.patientCases.delete.useMutation({
     onSuccess: () => {
       refetchPatientCases();
+    },
+  });
+
+  const createPatientMutation = trpc.patientCases.create.useMutation({
+    onSuccess: () => {
+      refetchPatientCases();
+      setPatientDialogOpen(false);
+      setEditingPatient(null);
+      setPatientHospitalId("");
+      setPatientName("");
+      setPatientNotes("");
     },
   });
 
@@ -182,6 +205,32 @@ export default function UnifiedDataEntry({
     }
   };
 
+  const handleAddPatient = (indicatorId: number, month: number) => {
+    setEditingPatient({ indicatorId, month, id: null });
+    setPatientHospitalId("");
+    setPatientName("");
+    setPatientNotes("");
+    setPatientDialogOpen(true);
+  };
+
+  const handleSavePatient = async () => {
+    if (!selectedDepartmentId || !editingPatient || !patientHospitalId || !patientName) return;
+
+    try {
+      await createPatientMutation.mutateAsync({
+        departmentId: selectedDepartmentId,
+        indicatorId: editingPatient.indicatorId,
+        year: selectedYear,
+        month: editingPatient.month,
+        hospitalId: patientHospitalId,
+        patientName: patientName,
+        notes: patientNotes || undefined,
+      });
+    } catch (error) {
+      console.error("Error saving patient case:", error);
+    }
+  };
+
   if (!selectedDepartmentId) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -282,9 +331,10 @@ export default function UnifiedDataEntry({
                                             key={patient.id}
                                             className="bg-muted/50 p-1 rounded flex items-center justify-between group"
                                           >
-                                            <span className="truncate flex-1">
-                                              {patient.hospitalId}
-                                            </span>
+                                            <div className="flex-1">
+                                              <div className="font-medium">{patient.hospitalId}</div>
+                                              <div className="text-xs text-muted-foreground">{patient.patientName}</div>
+                                            </div>
                                             <button
                                               onClick={() => handleDeletePatient(patient.id)}
                                               className="p-0.5 hover:bg-background rounded opacity-0 group-hover:opacity-100"
@@ -296,6 +346,15 @@ export default function UnifiedDataEntry({
                                         ))}
                                       </div>
                                     )}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full h-7 text-xs"
+                                      onClick={() => handleAddPatient(indicator.id, month.value)}
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add Patient
+                                    </Button>
                                   </div>
                                 )}
                               </div>
@@ -350,6 +409,49 @@ export default function UnifiedDataEntry({
             </Button>
             <Button onClick={handleSaveMonthlyData} disabled={!monthlyDataValue}>
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Patient Dialog */}
+      <Dialog open={patientDialogOpen} onOpenChange={setPatientDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Patient Case</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Hospital ID</Label>
+              <Input
+                value={patientHospitalId}
+                onChange={(e) => setPatientHospitalId(e.target.value)}
+                placeholder="e.g., PT-2026-001"
+              />
+            </div>
+            <div>
+              <Label>Patient Name</Label>
+              <Input
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                placeholder="e.g., John Doe"
+              />
+            </div>
+            <div>
+              <Label>Notes (Optional)</Label>
+              <Input
+                value={patientNotes}
+                onChange={(e) => setPatientNotes(e.target.value)}
+                placeholder="Add any notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPatientDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePatient} disabled={!patientHospitalId || !patientName}>
+              Save Patient
             </Button>
           </DialogFooter>
         </DialogContent>

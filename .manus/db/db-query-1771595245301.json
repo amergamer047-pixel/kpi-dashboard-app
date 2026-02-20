@@ -1,0 +1,35 @@
+{
+  "query": "\nSELECT 'Categories' as type, COUNT(*) as count FROM kpi_categories\nUNION ALL\nSELECT 'Indicators' as type, COUNT(*) as count FROM kpi_indicators\nUNION ALL\nSELECT 'Departments' as type, COUNT(*) as count FROM departments;\n\nSELECT * FROM kpi_categories LIMIT 5;\nSELECT * FROM kpi_indicators LIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute \nSELECT 'Categories' as type, COUNT(*) as count FROM kpi_categories\nUNION ALL\nSELECT 'Indicators' as type, COUNT(*) as count FROM kpi_indicators\nUNION ALL\nSELECT 'Departments' as type, COUNT(*) as count FROM departments;\n\nSELECT * FROM kpi_categories LIMIT 5;\nSELECT * FROM kpi_indicators LIMIT 5;\n",
+  "rows": [
+    {
+      "type": "Indicators",
+      "count": "162"
+    },
+    {
+      "type": "Categories",
+      "count": "182"
+    },
+    {
+      "type": "Departments",
+      "count": "1"
+    }
+  ],
+  "messages": [
+    "id\tuserId\tname\tdescription\tsortOrder\trequiresPatientInfo\tcreatedAt\tupdatedAt\tdepartmentId",
+    "1\t630019\tMandatory\tMandatory safety indicators\t1\t1\t2026-01-01 22:38:46\t2026-02-20 13:38:57\t0",
+    "2\t630019\tRespiratory\tRespiratory care indicators\t2\t1\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0",
+    "3\t630019\tRenal\tRenal care indicators\t3\t0\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0",
+    "390006\t1\tCustom Category\tNULL\t0\t1\t2026-02-10 17:59:17\t2026-02-10 17:59:17\t0",
+    "420001\t1\tTest Category\tNULL\t0\t0\t2026-02-16 23:19:35\t2026-02-16 23:19:35\t0",
+    "id\tuserId\tcategoryId\tname\tdescription\tunit\ttargetValue\tsortOrder\trequiresPatientInfo\tcreatedAt\tupdatedAt\tdepartmentId",
+    "1\t630019\t1\tPressure Sore\tNumber of pressure sore incidents\tcases\tNULL\t1\t1\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0",
+    "2\t630019\t1\tFall Incidents\tNumber of patient fall incidents\tcases\tNULL\t2\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0",
+    "3\t630019\t2\tNIV Cases\tNon-invasive ventilation cases\tcases\tNULL\t1\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0",
+    "4\t630019\t2\tIntubated Cases\tIntubation cases\tcases\tNULL\t2\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0",
+    "5\t630019\t3\tRDU Sessions\tRenal dialysis unit sessions\tsessions\tNULL\t1\t0\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0"
+  ],
+  "stdout": "type\tcount\nIndicators\t162\nCategories\t182\nDepartments\t1\nid\tuserId\tname\tdescription\tsortOrder\trequiresPatientInfo\tcreatedAt\tupdatedAt\tdepartmentId\n1\t630019\tMandatory\tMandatory safety indicators\t1\t1\t2026-01-01 22:38:46\t2026-02-20 13:38:57\t0\n2\t630019\tRespiratory\tRespiratory care indicators\t2\t1\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0\n3\t630019\tRenal\tRenal care indicators\t3\t0\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0\n390006\t1\tCustom Category\tNULL\t0\t1\t2026-02-10 17:59:17\t2026-02-10 17:59:17\t0\n420001\t1\tTest Category\tNULL\t0\t0\t2026-02-16 23:19:35\t2026-02-16 23:19:35\t0\nid\tuserId\tcategoryId\tname\tdescription\tunit\ttargetValue\tsortOrder\trequiresPatientInfo\tcreatedAt\tupdatedAt\tdepartmentId\n1\t630019\t1\tPressure Sore\tNumber of pressure sore incidents\tcases\tNULL\t1\t1\t2026-01-01 22:38:47\t2026-02-20 13:38:57\t0\n2\t630019\t1\tFall Incidents\tNumber of patient fall incidents\tcases\tNULL\t2\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0\n3\t630019\t2\tNIV Cases\tNon-invasive ventilation cases\tcases\tNULL\t1\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0\n4\t630019\t2\tIntubated Cases\tIntubation cases\tcases\tNULL\t2\t1\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0\n5\t630019\t3\tRDU Sessions\tRenal dialysis unit sessions\tsessions\tNULL\t1\t0\t2026-01-01 22:38:48\t2026-02-20 13:38:57\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1959
+}

@@ -130,11 +130,18 @@ export async function deleteDepartment(id: number, userId: number) {
 }
 
 // KPI Category operations
-export async function getKpiCategories(userId: number) {
+export async function getKpiCategories(userId: number, departmentId?: number) {
   const db = await getDb();
   if (!db) return [];
+  
+  if (departmentId) {
+    return db.select().from(kpiCategories)
+      .where(and(eq(kpiCategories.userId, userId), eq(kpiCategories.departmentId, departmentId)))
+      .orderBy(asc(kpiCategories.sortOrder), asc(kpiCategories.name));
+  }
+  
   return db.select().from(kpiCategories)
-    .where(sql`${kpiCategories.isSystemCategory} = 1 OR ${kpiCategories.userId} = ${userId}`)
+    .where(eq(kpiCategories.userId, userId))
     .orderBy(asc(kpiCategories.sortOrder), asc(kpiCategories.name));
 }
 
@@ -160,21 +167,31 @@ export async function deleteKpiCategory(id: number, userId: number) {
 }
 
 // KPI Indicator operations
-export async function getKpiIndicators(userId: number, categoryId?: number) {
+export async function getKpiIndicators(userId: number, categoryId?: number, departmentId?: number) {
   const db = await getDb();
   if (!db) return [];
   
   if (categoryId) {
     return db.select().from(kpiIndicators)
       .where(and(
-        sql`(${kpiIndicators.isSystemIndicator} = 1 OR ${kpiIndicators.userId} = ${userId})`,
-        eq(kpiIndicators.categoryId, categoryId)
+        eq(kpiIndicators.userId, userId),
+        eq(kpiIndicators.categoryId, categoryId),
+        departmentId ? eq(kpiIndicators.departmentId, departmentId) : undefined
       ))
       .orderBy(asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
   }
   
+  if (departmentId) {
+    return db.select().from(kpiIndicators)
+      .where(and(
+        eq(kpiIndicators.userId, userId),
+        eq(kpiIndicators.departmentId, departmentId)
+      ))
+      .orderBy(asc(kpiIndicators.categoryId), asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
+  }
+  
   return db.select().from(kpiIndicators)
-    .where(sql`${kpiIndicators.isSystemIndicator} = 1 OR ${kpiIndicators.userId} = ${userId}`)
+    .where(eq(kpiIndicators.userId, userId))
     .orderBy(asc(kpiIndicators.categoryId), asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
 }
 
@@ -369,14 +386,14 @@ export async function initializeSystemData() {
   if (!db) return;
   
   // Check if already initialized
-  const existingCategories = await db.select().from(kpiCategories).where(eq(kpiCategories.isSystemCategory, 1));
+  const existingCategories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, 630019));
   if (existingCategories.length > 0) return;
   
   // Create system categories
   const categoryData: InsertKpiCategory[] = [
-    { name: "Mandatory", description: "Mandatory safety indicators", sortOrder: 1, isSystemCategory: 1, requiresPatientInfo: 1 },
-    { name: "Respiratory", description: "Respiratory care indicators", sortOrder: 2, isSystemCategory: 1, requiresPatientInfo: 1 },
-    { name: "Renal", description: "Renal care indicators", sortOrder: 3, isSystemCategory: 1, requiresPatientInfo: 0 },
+    { userId: 630019, name: "Mandatory", description: "Mandatory safety indicators", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: 630019, name: "Respiratory", description: "Respiratory care indicators", sortOrder: 2, requiresPatientInfo: 1 },
+    { userId: 630019, name: "Renal", description: "Renal care indicators", sortOrder: 3, requiresPatientInfo: 0 },
   ];
   
   for (const cat of categoryData) {
@@ -384,7 +401,7 @@ export async function initializeSystemData() {
   }
   
   // Get inserted categories
-  const categories = await db.select().from(kpiCategories).where(eq(kpiCategories.isSystemCategory, 1));
+  const categories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, 630019));
   const mandatoryId = categories.find(c => c.name === "Mandatory")?.id;
   const respiratoryId = categories.find(c => c.name === "Respiratory")?.id;
   const renalId = categories.find(c => c.name === "Renal")?.id;
@@ -392,13 +409,13 @@ export async function initializeSystemData() {
   // Create system indicators
   const indicatorData: InsertKpiIndicator[] = [
     // Mandatory
-    { categoryId: mandatoryId!, name: "Pressure Sore", description: "Number of pressure sore incidents", unit: "cases", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 1 },
-    { categoryId: mandatoryId!, name: "Fall Incidents", description: "Number of patient fall incidents", unit: "cases", sortOrder: 2, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    { userId: 630019, categoryId: mandatoryId!, name: "Pressure Sore", description: "Number of pressure sore incidents", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: 630019, categoryId: mandatoryId!, name: "Fall Incidents", description: "Number of patient fall incidents", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
     // Respiratory
-    { categoryId: respiratoryId!, name: "NIV Cases", description: "Non-invasive ventilation cases", unit: "cases", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 1 },
-    { categoryId: respiratoryId!, name: "Intubated Cases", description: "Intubation cases", unit: "cases", sortOrder: 2, isSystemIndicator: 1, requiresPatientInfo: 1 },
+    { userId: 630019, categoryId: respiratoryId!, name: "NIV Cases", description: "Non-invasive ventilation cases", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: 630019, categoryId: respiratoryId!, name: "Intubated Cases", description: "Intubation cases", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
     // Renal
-    { categoryId: renalId!, name: "RDU Sessions", description: "Renal dialysis unit sessions", unit: "sessions", sortOrder: 1, isSystemIndicator: 1, requiresPatientInfo: 0 },
+    { userId: 630019, categoryId: renalId!, name: "RDU Sessions", description: "Renal dialysis unit sessions", unit: "sessions", sortOrder: 1, requiresPatientInfo: 0 },
   ];
   
   for (const ind of indicatorData) {

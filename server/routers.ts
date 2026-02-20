@@ -89,15 +89,18 @@ export const appRouter = router({
 
   // KPI Category routes
   categories: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      await initializeSystemData();
-      return getKpiCategories(ctx.user.id);
-    }),
+    list: protectedProcedure
+      .input(z.object({ departmentId: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        await initializeSystemData();
+        return getKpiCategories(ctx.user.id, input?.departmentId);
+      }),
     
     create: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
         description: z.string().optional(),
+        departmentId: z.number().optional(),
         sortOrder: z.number().optional(),
         requiresPatientInfo: z.boolean().optional(),
       }))
@@ -105,7 +108,6 @@ export const appRouter = router({
         return createKpiCategory({ 
           ...input, 
           userId: ctx.user.id, 
-          isSystemCategory: 0,
           requiresPatientInfo: input.requiresPatientInfo ? 1 : 0,
         });
       }),
@@ -135,10 +137,10 @@ export const appRouter = router({
   // KPI Indicator routes
   indicators: router({
     list: protectedProcedure
-      .input(z.object({ categoryId: z.number().optional() }).optional())
+      .input(z.object({ categoryId: z.number().optional(), departmentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
         await initializeSystemData();
-        return getKpiIndicators(ctx.user.id, input?.categoryId);
+        return getKpiIndicators(ctx.user.id, input?.categoryId, input?.departmentId);
       }),
     
     create: protectedProcedure
@@ -146,6 +148,7 @@ export const appRouter = router({
         categoryId: z.number(),
         name: z.string().min(1),
         description: z.string().optional(),
+        departmentId: z.number().optional(),
         unit: z.string().optional(),
         targetValue: z.string().optional(),
         sortOrder: z.number().optional(),
@@ -155,7 +158,6 @@ export const appRouter = router({
         return createKpiIndicator({ 
           ...input, 
           userId: ctx.user.id, 
-          isSystemIndicator: 0,
           requiresPatientInfo: input.requiresPatientInfo ? 1 : 0,
         });
       }),

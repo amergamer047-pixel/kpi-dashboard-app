@@ -1,0 +1,19 @@
+{
+  "query": "\n-- Get the Male ward department ID\nSET @maleWardId = (SELECT id FROM departments WHERE name = 'Male ward' LIMIT 1);\n\n-- Update all categories to be assigned to Male ward\nUPDATE kpi_categories SET departmentId = @maleWardId WHERE departmentId = 0;\n\n-- Update all indicators to be assigned to Male ward\nUPDATE kpi_indicators SET departmentId = @maleWardId WHERE departmentId = 0;\n\n-- Verify the updates\nSELECT COUNT(*) as categories_updated FROM kpi_categories WHERE departmentId = @maleWardId;\nSELECT COUNT(*) as indicators_updated FROM kpi_indicators WHERE departmentId = @maleWardId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute \n-- Get the Male ward department ID\nSET @maleWardId = (SELECT id FROM departments WHERE name = 'Male ward' LIMIT 1);\n\n-- Update all categories to be assigned to Male ward\nUPDATE kpi_categories SET departmentId = @maleWardId WHERE departmentId = 0;\n\n-- Update all indicators to be assigned to Male ward\nUPDATE kpi_indicators SET departmentId = @maleWardId WHERE departmentId = 0;\n\n-- Verify the updates\nSELECT COUNT(*) as categories_updated FROM kpi_categories WHERE departmentId = @maleWardId;\nSELECT COUNT(*) as indicators_updated FROM kpi_indicators WHERE departmentId = @maleWardId;\n",
+  "rows": [
+    {
+      "categories_updated": "182"
+    },
+    {
+      "categories_updated": "indicators_updated"
+    },
+    {
+      "categories_updated": "162"
+    }
+  ],
+  "messages": [],
+  "stdout": "categories_updated\n182\nindicators_updated\n162\n",
+  "stderr": "",
+  "execution_time_ms": 2544
+}

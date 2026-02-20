@@ -41,10 +41,10 @@ export type InsertDepartment = typeof departments.$inferInsert;
 export const kpiCategories = mysqlTable("kpi_categories", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
+  departmentId: int("departmentId").default(0),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   sortOrder: int("sortOrder").default(0),
-  isSystemCategory: int("isSystemCategory").default(0),
   requiresPatientInfo: int("requiresPatientInfo").default(0), // 1 for Mandatory & Respiratory
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -60,12 +60,12 @@ export const kpiIndicators = mysqlTable("kpi_indicators", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
   categoryId: int("categoryId").notNull(),
+  departmentId: int("departmentId").default(0),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   unit: varchar("unit", { length: 50 }).default("cases"),
   targetValue: decimal("targetValue", { precision: 10, scale: 2 }),
   sortOrder: int("sortOrder").default(0),
-  isSystemIndicator: int("isSystemIndicator").default(0),
   requiresPatientInfo: int("requiresPatientInfo").default(0), // 1 if needs patient details
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

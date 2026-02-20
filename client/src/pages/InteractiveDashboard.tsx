@@ -81,8 +81,14 @@ export default function InteractiveDashboard() {
 
   // Queries
   const { data: departments = [], refetch: refetchDepts } = trpc.departments.list.useQuery();
-  const { data: categories = [], refetch: refetchCats } = trpc.categories.list.useQuery();
-  const { data: indicators = [], refetch: refetchInds } = trpc.indicators.list.useQuery();
+  const { data: categories = [], refetch: refetchCats } = trpc.categories.list.useQuery(
+    selectedDepartmentId ? { departmentId: selectedDepartmentId } : undefined,
+    { enabled: !!selectedDepartmentId }
+  );
+  const { data: indicators = [], refetch: refetchInds } = trpc.indicators.list.useQuery(
+    selectedDepartmentId ? { departmentId: selectedDepartmentId } : undefined,
+    { enabled: !!selectedDepartmentId }
+  );
   const { data: monthlyData = [], refetch: refetchMonthly } = trpc.monthlyData.get.useQuery(
     { departmentId: selectedDepartmentId || 0, year: selectedYear, quarter: viewMode === "quarterly" ? selectedQuarter : 0 },
     { enabled: !!selectedDepartmentId }
