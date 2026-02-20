@@ -11,7 +11,6 @@ import {
   getMonthlyKpiData, upsertMonthlyKpiData,
   getPatientCases, getPatientCasesByDepartment, getPatientCasesWithDetails, createPatientCase, updatePatientCase, deletePatientCase,
   getQuarterlySummary, initializeSystemData, getDb,
-
 } from "./db";
 import { monthlyKpiData, departments, kpiCategories, kpiIndicators } from "../drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -93,7 +92,7 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ departmentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        await initializeSystemData();
+        await initializeSystemData(ctx.user.id);
         return getKpiCategories(ctx.user.id, input?.departmentId);
       }),
     
@@ -140,7 +139,7 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ categoryId: z.number().optional(), departmentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        await initializeSystemData();
+        await initializeSystemData(ctx.user.id);
         return getKpiIndicators(ctx.user.id, input?.categoryId, input?.departmentId);
       }),
     

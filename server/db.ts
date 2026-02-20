@@ -449,19 +449,22 @@ export async function getQuarterlySummary(userId: number, departmentId: number, 
 }
 
 // Initialize system categories and indicators
-export async function initializeSystemData() {
+export async function initializeSystemData(userId?: number) {
   const db = await getDb();
   if (!db) return;
   
-  // Check if already initialized
-  const existingCategories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, 630019));
+  // Use provided userId or default system user
+  const systemUserId = userId || 630019;
+  
+  // Check if already initialized for this user
+  const existingCategories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, systemUserId));
   if (existingCategories.length > 0) return;
   
   // Create system categories
   const categoryData: InsertKpiCategory[] = [
-    { userId: 630019, name: "Mandatory", description: "Mandatory safety indicators", sortOrder: 1, requiresPatientInfo: 1 },
-    { userId: 630019, name: "Respiratory", description: "Respiratory care indicators", sortOrder: 2, requiresPatientInfo: 1 },
-    { userId: 630019, name: "Renal", description: "Renal care indicators", sortOrder: 3, requiresPatientInfo: 0 },
+    { userId: systemUserId, name: "Mandatory", description: "Mandatory safety indicators", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: systemUserId, name: "Respiratory", description: "Respiratory care indicators", sortOrder: 2, requiresPatientInfo: 1 },
+    { userId: systemUserId, name: "Renal", description: "Renal care indicators", sortOrder: 3, requiresPatientInfo: 0 },
   ];
   
   for (const cat of categoryData) {
@@ -469,7 +472,7 @@ export async function initializeSystemData() {
   }
   
   // Get inserted categories
-  const categories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, 630019));
+  const categories = await db.select().from(kpiCategories).where(eq(kpiCategories.userId, systemUserId));
   const mandatoryId = categories.find(c => c.name === "Mandatory")?.id;
   const respiratoryId = categories.find(c => c.name === "Respiratory")?.id;
   const renalId = categories.find(c => c.name === "Renal")?.id;
@@ -477,13 +480,13 @@ export async function initializeSystemData() {
   // Create system indicators
   const indicatorData: InsertKpiIndicator[] = [
     // Mandatory
-    { userId: 630019, categoryId: mandatoryId!, name: "Pressure Sore", description: "Number of pressure sore incidents", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
-    { userId: 630019, categoryId: mandatoryId!, name: "Fall Incidents", description: "Number of patient fall incidents", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
+    { userId: systemUserId, categoryId: mandatoryId!, name: "Pressure Sore", description: "Number of pressure sore incidents", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: systemUserId, categoryId: mandatoryId!, name: "Fall Incidents", description: "Number of patient fall incidents", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
     // Respiratory
-    { userId: 630019, categoryId: respiratoryId!, name: "NIV Cases", description: "Non-invasive ventilation cases", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
-    { userId: 630019, categoryId: respiratoryId!, name: "Intubated Cases", description: "Intubation cases", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
+    { userId: systemUserId, categoryId: respiratoryId!, name: "NIV Cases", description: "Non-invasive ventilation cases", unit: "cases", sortOrder: 1, requiresPatientInfo: 1 },
+    { userId: systemUserId, categoryId: respiratoryId!, name: "Intubated Cases", description: "Intubation cases", unit: "cases", sortOrder: 2, requiresPatientInfo: 1 },
     // Renal
-    { userId: 630019, categoryId: renalId!, name: "RDU Sessions", description: "Renal dialysis unit sessions", unit: "sessions", sortOrder: 1, requiresPatientInfo: 0 },
+    { userId: systemUserId, categoryId: renalId!, name: "RDU Sessions", description: "Renal dialysis unit sessions", unit: "sessions", sortOrder: 1, requiresPatientInfo: 0 },
   ];
   
   for (const ind of indicatorData) {
