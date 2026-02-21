@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total_categories, COUNT(DISTINCT name) as unique_names FROM kpi_categories;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute SELECT COUNT(*) as total_categories, COUNT(DISTINCT name) as unique_names FROM kpi_categories;",
+  "rows": [
+    {
+      "total_categories": "93",
+      "unique_names": "11"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_categories\tunique_names\n93\t11\n",
+  "stderr": "",
+  "execution_time_ms": 1957
+}

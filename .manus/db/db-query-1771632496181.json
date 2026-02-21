@@ -1,0 +1,65 @@
+{
+  "query": "SELECT * FROM kpi_categories LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute SELECT * FROM kpi_categories LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "630019",
+      "name": "Mandatory",
+      "description": "Mandatory safety indicators",
+      "sortOrder": "1",
+      "requiresPatientInfo": "1",
+      "createdAt": "2026-01-01 22:38:46",
+      "updatedAt": "2026-02-20 13:47:35",
+      "departmentId": "540112"
+    },
+    {
+      "id": "2",
+      "userId": "630019",
+      "name": "Respiratory",
+      "description": "Respiratory care indicators",
+      "sortOrder": "2",
+      "requiresPatientInfo": "1",
+      "createdAt": "2026-01-01 22:38:47",
+      "updatedAt": "2026-02-20 13:47:35",
+      "departmentId": "540112"
+    },
+    {
+      "id": "3",
+      "userId": "630019",
+      "name": "Renal",
+      "description": "Renal care indicators",
+      "sortOrder": "3",
+      "requiresPatientInfo": "0",
+      "createdAt": "2026-01-01 22:38:47",
+      "updatedAt": "2026-02-20 13:47:35",
+      "departmentId": "540112"
+    },
+    {
+      "id": "540001",
+      "userId": "630019",
+      "name": "Mandatory",
+      "description": "Mandatory safety indicators",
+      "sortOrder": "1",
+      "requiresPatientInfo": "1",
+      "createdAt": "2026-02-20 13:46:23",
+      "updatedAt": "2026-02-20 13:46:23",
+      "departmentId": "540112"
+    },
+    {
+      "id": "540002",
+      "userId": "630019",
+      "name": "Respiratory",
+      "description": "Respiratory care indicators",
+      "sortOrder": "2",
+      "requiresPatientInfo": "1",
+      "createdAt": "2026-02-20 13:46:23",
+      "updatedAt": "2026-02-20 13:46:23",
+      "departmentId": "540112"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tname\tdescription\tsortOrder\trequiresPatientInfo\tcreatedAt\tupdatedAt\tdepartmentId\n1\t630019\tMandatory\tMandatory safety indicators\t1\t1\t2026-01-01 22:38:46\t2026-02-20 13:47:35\t540112\n2\t630019\tRespiratory\tRespiratory care indicators\t2\t1\t2026-01-01 22:38:47\t2026-02-20 13:47:35\t540112\n3\t630019\tRenal\tRenal care indicators\t3\t0\t2026-01-01 22:38:47\t2026-02-20 13:47:35\t540112\n540001\t630019\tMandatory\tMandatory safety indicators\t1\t1\t2026-02-20 13:46:23\t2026-02-20 13:46:23\t540112\n540002\t630019\tRespiratory\tRespiratory care indicators\t2\t1\t2026-02-20 13:46:23\t2026-02-20 13:46:23\t540112\n",
+  "stderr": "",
+  "execution_time_ms": 1639
+}

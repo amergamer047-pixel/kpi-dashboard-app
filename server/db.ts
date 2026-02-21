@@ -186,12 +186,12 @@ export async function getKpiCategories(userId: number, departmentId?: number) {
   if (!db) return [];
   
   if (departmentId) {
-    // Return both department-specific categories AND system categories (those without departmentId)
+    // Return both department-specific categories AND system categories (those with departmentId = 0 or NULL)
     return db.select().from(kpiCategories)
       .where(
         or(
           and(eq(kpiCategories.userId, userId), eq(kpiCategories.departmentId, departmentId)),
-          and(eq(kpiCategories.userId, userId), isNull(kpiCategories.departmentId))
+          and(eq(kpiCategories.userId, userId), or(eq(kpiCategories.departmentId, 0), isNull(kpiCategories.departmentId)))
         )
       )
       .orderBy(asc(kpiCategories.sortOrder), asc(kpiCategories.name));
@@ -229,21 +229,21 @@ export async function getKpiIndicators(userId: number, categoryId?: number, depa
   if (!db) return [];
   
   if (categoryId) {
-    // Return both department-specific indicators AND system indicators (those without departmentId)
+    // Return both department-specific indicators AND system indicators (those with departmentId = 0 or NULL)
     return db.select().from(kpiIndicators)
       .where(and(
         eq(kpiIndicators.userId, userId),
         eq(kpiIndicators.categoryId, categoryId),
         or(
-          departmentId ? eq(kpiIndicators.departmentId, departmentId) : isNull(kpiIndicators.departmentId),
-          isNull(kpiIndicators.departmentId)
+          departmentId ? eq(kpiIndicators.departmentId, departmentId) : or(eq(kpiIndicators.departmentId, 0), isNull(kpiIndicators.departmentId)),
+          or(eq(kpiIndicators.departmentId, 0), isNull(kpiIndicators.departmentId))
         )
       ))
       .orderBy(asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));
   }
   
   if (departmentId) {
-    // Return both department-specific indicators AND system indicators (those without departmentId)
+    // Return both department-specific indicators AND system indicators (those with departmentId = 0 or NULL)
     return db.select().from(kpiIndicators)
       .where(or(
         and(
@@ -252,7 +252,7 @@ export async function getKpiIndicators(userId: number, categoryId?: number, depa
         ),
         and(
           eq(kpiIndicators.userId, userId),
-          isNull(kpiIndicators.departmentId)
+          or(eq(kpiIndicators.departmentId, 0), isNull(kpiIndicators.departmentId))
         )
       ))
       .orderBy(asc(kpiIndicators.categoryId), asc(kpiIndicators.sortOrder), asc(kpiIndicators.name));

@@ -1,0 +1,19 @@
+{
+  "query": "SELECT COUNT(*) as total FROM kpi_categories; SELECT COUNT(*) as total FROM kpi_indicators;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43GZwxgKhvuEQGT.9593b498cfd9 --database aTmhw6kBiSFaHddzFgQyf5 --execute SELECT COUNT(*) as total FROM kpi_categories; SELECT COUNT(*) as total FROM kpi_indicators;",
+  "rows": [
+    {
+      "total": "93"
+    },
+    {
+      "total": "total"
+    },
+    {
+      "total": "89"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n93\ntotal\n89\n",
+  "stderr": "",
+  "execution_time_ms": 1758
+}
