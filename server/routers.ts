@@ -115,7 +115,6 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ departmentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        await initializeSystemData(ctx.user.id);
         return getKpiCategories(ctx.user.id, input?.departmentId);
       }),
     
@@ -162,7 +161,6 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ categoryId: z.number().optional(), departmentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        await initializeSystemData(ctx.user.id);
         return getKpiIndicators(ctx.user.id, input?.categoryId, input?.departmentId);
       }),
     

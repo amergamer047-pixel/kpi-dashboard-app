@@ -35,6 +35,13 @@ import {
   Line,
   AreaChart,
   Area,
+  ScatterChart,
+  Scatter,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from "recharts";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
@@ -743,6 +750,138 @@ export default function InteractiveDashboard({ userName, onLogout }: Interactive
                                 ))}
                               </LineChart>
                             </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "scatter") {
+                          const scatterData = indicatorData.map((item: any, idx: number) => ({
+                            x: idx,
+                            y: item.value,
+                            name: item.name,
+                            color: item.color
+                          }));
+                          return (
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
+                              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" dataKey="x" />
+                                <YAxis type="number" dataKey="y" />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                <Scatter name="Indicators" data={scatterData} fill={currentColors[0]}>
+                                  {scatterData.map((item: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={item.color} />
+                                  ))}
+                                </Scatter>
+                              </ScatterChart>
+                            </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "radar") {
+                          return (
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
+                              <RadarChart data={indicatorData}>
+                                <PolarGrid />
+                                <PolarAngleAxis dataKey="name" />
+                                <PolarRadiusAxis />
+                                <Radar name="Performance" dataKey="value" stroke={currentColors[0]} fill={currentColors[0]} fillOpacity={0.6} />
+                                <Tooltip />
+                                <Legend />
+                              </RadarChart>
+                            </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "gauge") {
+                          const totalValue = indicatorData.reduce((sum: number, item: any) => sum + item.value, 0);
+                          const maxValue = Math.max(...indicatorData.map((item: any) => item.value), 100);
+                          const percentage = (totalValue / (maxValue * indicatorData.length)) * 100;
+                          const circumference = 2 * Math.PI * 45;
+                          const strokeDashoffset = circumference - (percentage / 100) * circumference;
+                          return (
+                            <div className="flex flex-col items-center justify-center h-80">
+                              <svg width="200" height="200" className="transform -rotate-90">
+                                <circle cx="100" cy="100" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+                                <circle
+                                  cx="100"
+                                  cy="100"
+                                  r="45"
+                                  fill="none"
+                                  stroke={currentColors[0]}
+                                  strokeWidth="8"
+                                  strokeDasharray={circumference}
+                                  strokeDashoffset={strokeDashoffset}
+                                  strokeLinecap="round"
+                                />
+                                <text x="100" y="100" textAnchor="middle" dy="0.3em" className="text-2xl font-bold" fill="currentColor">
+                                  {Math.round(percentage)}%
+                                </text>
+                              </svg>
+                              <p className="mt-4 text-gray-600">
+                                {Math.round(totalValue)} / {Math.round(maxValue * indicatorData.length)}
+                              </p>
+                            </div>
+                          );
+                        }
+                        if (chartType === "heatmap") {
+                          const maxValue = Math.max(...indicatorData.map((d: any) => d.value), 1);
+                          return (
+                            <div className="grid grid-cols-4 gap-2 p-4">
+                              {indicatorData.map((item: any, idx: number) => {
+                                const intensity = item.value / maxValue;
+                                const colorIndex = Math.floor(intensity * (currentColors.length - 1));
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="p-4 rounded text-white text-center text-sm font-semibold"
+                                    style={{ backgroundColor: currentColors[colorIndex] }}
+                                  >
+                                    <div>{item.name}</div>
+                                    <div className="text-lg font-bold">{item.value}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        }
+                        if (chartType === "waterfall") {
+                          return (
+                            <ResponsiveContainer width="100%" height={Math.max(300, window.innerHeight * 0.4)}>
+                              <BarChart data={indicatorData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" fill={currentColors[0]}>
+                                  {indicatorData.map((item: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={item.color} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          );
+                        }
+                        if (chartType === "funnel") {
+                          const sortedData = [...indicatorData].sort((a: any, b: any) => b.value - a.value);
+                          const maxValue = sortedData[0]?.value || 100;
+                          return (
+                            <div className="space-y-2 p-4">
+                              {sortedData.map((item: any, idx: number) => {
+                                const percentage = (item.value / maxValue) * 100;
+                                return (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium">{item.name}</div>
+                                      <div
+                                        className="h-8 rounded transition-all"
+                                        style={{
+                                          width: `${percentage}%`,
+                                          backgroundColor: item.color
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="text-sm font-semibold w-16 text-right">{item.value}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           );
                         }
                         return (
