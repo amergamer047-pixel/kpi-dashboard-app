@@ -140,6 +140,19 @@ export function KpiSettings() {
     },
   });
 
+  const deleteAll = trpc.departments.deleteAll.useMutation({
+    onSuccess: (data) => {
+      utils.departments.list.invalidate();
+      utils.categories.list.invalidate();
+      utils.indicators.list.invalidate();
+      setDeleteDeptId(null);
+      toast.success(`Deleted ${data.deleted} departments and all associated data`);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete all departments");
+    },
+  });
+
   // Department handlers
   const handleDeptSave = () => {
     if (!deptForm.name.trim()) {
@@ -216,17 +229,27 @@ export function KpiSettings() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Manage Departments</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingDept(null);
-                  setDeptForm({ name: "", description: "", color: "#3B82F6" });
-                  setDeptDialog(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Department
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setDeleteDeptId(-2)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete All
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setEditingDept(null);
+                    setDeptForm({ name: "", description: "", color: "#3B82F6" });
+                    setDeptDialog(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Department
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {departments.length === 0 ? (

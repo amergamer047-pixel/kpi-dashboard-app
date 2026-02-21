@@ -13,7 +13,7 @@ import {
   getQuarterlySummary, initializeSystemData, getDb,
 } from "./db";
 import { monthlyKpiData, departments, kpiCategories, kpiIndicators } from "../drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -84,6 +84,29 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         return bulkFreezeDepartments(input.ids, input.isFrozen);
+      }),
+
+    deleteAll: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database connection failed");
+        
+        const userDepts = await db.select().from(departments)
+          .where(eq(departments.userId, ctx.user.id));
+        
+        if (userDepts.length === 0) return { deleted: 0 };
+        
+        const deptIds = userDepts.map(d => d.id);
+        const { monthlyKpiData: mData, patientCases: pCases, quarterlyReports: qReports } = await import("../drizzle/schema");
+        
+        await db.delete(mData).where(inArray(mData.departmentId, deptIds));
+        await db.delete(pCases).where(inArray(pCases.departmentId, deptIds));
+        await db.delete(qReports).where(inArray(qReports.departmentId, deptIds));
+        await db.delete(kpiIndicators).where(inArray(kpiIndicators.departmentId, deptIds));
+        await db.delete(kpiCategories).where(inArray(kpiCategories.departmentId, deptIds));
+        await db.delete(departments).where(eq(departments.userId, ctx.user.id));
+        
+        return { deleted: userDepts.length };
       }),
   }),
 
@@ -376,3 +399,5 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+
+    // This will be added as deleteAll endpoint
